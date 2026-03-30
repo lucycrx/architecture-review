@@ -1,0 +1,562 @@
+[
+  {
+    "id": "sessions-in-primary-db",
+    "category": "database",
+    "pattern": {
+      "description": "User sessions stored in the primary database instead of a dedicated fast store",
+      "signals": [
+        "Session table or model in database schema",
+        "express-session configured with a database store (not Redis)",
+        "Django SESSION_ENGINE set to django.contrib.sessions.backends.db",
+        "Rails session_store configured with :active_record_store",
+        "NextAuth/Auth.js with database session strategy and no separate session store",
+        "Session queries executing on every authenticated request"
+      ]
+    },
+    "severity": "medium",
+    "scaleThreshold": {
+      "metric": "concurrent users",
+      "value": 500,
+      "label": "~500 concurrent users"
+    },
+    "explanation": {
+      "plain": "Your user sessions are stored in your main database. Every time someone loads a page, the system has to check their session in the same place it stores all your real data.",
+      "analogy": "Think of it like a bank that checks your ID by walking to the vault every time you want to do anything. When there are 5 customers, it works fine. At 500, there is a line out the door while the teller walks back and forth to the vault for every transaction.",
+      "consequence": "As traffic grows, session lookups compete with your actual data queries for database connections, slowing everything down. Your database becomes a bottleneck not because of your data, but because of session checks."
+    },
+    "fix": {
+      "summary": "Move sessions to Redis or a similar in-memory store",
+      "detail": "Redis keeps sessions in memory instead of on disk. Session lookups go from ~5ms to ~0.1ms. Think of it as putting a fast badge-scanner at the building entrance instead of making everyone walk to the vault for ID verification.",
+      "relatedGlossary": ["cache", "in-memory-store"],
+      "relatedStory": null
+    },
+    "frameworks": {
+      "nextjs": "Check next-auth/auth.js config for session strategy. Look for adapter configuration pointing to the main database.",
+      "express": "Look for express-session with connect-pg-simple, connect-mongo, or similar database stores instead of connect-redis.",
+      "django": "Check SESSION_ENGINE in settings.py. 'django.contrib.sessions.backends.db' means database-backed sessions.",
+      "rails": "Check config/initializers/session_store.rb. :active_record_store uses the database."
+    }
+  },
+  {
+    "id": "no-caching-read-heavy",
+    "category": "database",
+    "pattern": {
+      "description": "Read-heavy endpoints hitting the database on every request with no caching layer",
+      "signals": [
+        "API routes or pages that fetch data on every request without any cache",
+        "No Redis, Memcached, or in-memory cache configured",
+        "No Cache-Control headers on API responses",
+        "No ISR or static generation for content-heavy pages",
+        "Database queries in hot paths (homepage, search, product listing) with no caching",
+        "Repeated identical queries visible in route handlers"
+      ]
+    },
+    "severity": "medium",
+    "scaleThreshold": {
+      "metric": "requests per second",
+      "value": 100,
+      "label": "~100 requests per second"
+    },
+    "explanation": {
+      "plain": "Every time someone visits your site, the system goes all the way to the database to get the same data that hundreds of other visitors just asked for.",
+      "analogy": "Imagine a librarian who walks to the back room to fetch the same popular book every time someone asks about it, instead of keeping a copy at the front desk. With 5 visitors a day it is fine. With 100 visitors an hour, the librarian spends all day walking back and forth.",
+      "consequence": "Database gets hammered with redundant queries. Response times climb. At high traffic, the database becomes the bottleneck and pages load slowly or time out."
+    },
+    "fix": {
+      "summary": "Add a caching layer for frequently accessed data",
+      "detail": "Cache responses for data that does not change on every request. This could be Redis for API data, ISR/static generation for pages, or even simple in-memory caching with a short TTL. Start with the highest-traffic endpoints first.",
+      "relatedGlossary": ["cache", "cdn", "in-memory-store"],
+      "relatedStory": { "storySlug": "online-store", "stageId": "stage-2" }
+    },
+    "frameworks": {
+      "nextjs": "Check if pages use static generation (generateStaticParams), ISR (revalidate), or fetch with cache options. Look for unstable_cache or React cache() usage.",
+      "express": "Look for cache middleware (apicache, express-cache-controller) or manual Redis caching in route handlers.",
+      "django": "Check for @cache_page decorators, CACHES setting in settings.py, or django-redis configuration.",
+      "rails": "Look for Rails.cache usage, fragment caching in views, or caches_action/caches_page in controllers."
+    }
+  },
+  {
+    "id": "blobs-in-database",
+    "category": "database",
+    "pattern": {
+      "description": "Images, files, or large binary data stored directly in the database instead of object storage",
+      "signals": [
+        "BLOB or BYTEA columns in database schema",
+        "Base64-encoded file data stored in database fields",
+        "File upload handlers that write binary content to database",
+        "Image data stored as text/base64 in database columns",
+        "No S3, cloud storage, or file storage service configured despite having file uploads"
+      ]
+    },
+    "severity": "medium",
+    "scaleThreshold": {
+      "metric": "stored files",
+      "value": 10000,
+      "label": "~10,000 files"
+    },
+    "explanation": {
+      "plain": "Your files and images are stored inside your database alongside your regular data. Databases are designed for structured data like text and numbers, not large files.",
+      "analogy": "It is like stuffing your filing cabinet with actual physical products instead of just the paperwork about them. The cabinet fills up fast, drawers get slow to open, and you are paying premium filing-cabinet prices for warehouse storage.",
+      "consequence": "Database size balloons, backups take longer, and queries slow down because the database has to work around large binary data. Storage costs are also much higher in a database than in object storage like S3."
+    },
+    "fix": {
+      "summary": "Move files to object storage (S3, Cloudinary, Supabase Storage) and store only the URL in the database",
+      "detail": "Store a URL or file path in the database, and put the actual file in a service designed for it. Object storage is cheaper, faster for serving files, and can be fronted by a CDN for even better performance.",
+      "relatedGlossary": ["database", "cdn"],
+      "relatedStory": null
+    },
+    "frameworks": {
+      "nextjs": "Check Prisma schema for Bytes fields. Look for file upload API routes that write to database. Check if Supabase Storage or S3 is configured.",
+      "express": "Look for multer storage configuration. Check if files are saved to database via Buffer/BLOB.",
+      "django": "Check for BinaryField or FileField with database storage backend in models.",
+      "rails": "Check for Active Storage configuration. Look for binary or blob columns in migrations."
+    }
+  },
+  {
+    "id": "no-rate-limiting",
+    "category": "api",
+    "pattern": {
+      "description": "Public API endpoints with no rate limiting, vulnerable to abuse or accidental overload",
+      "signals": [
+        "No rate limiting middleware configured",
+        "No express-rate-limit, django-ratelimit, rack-attack, or equivalent installed",
+        "Public endpoints (signup, login, search, API) with no request throttling",
+        "No API gateway with built-in rate limiting",
+        "No usage of Cloudflare, AWS WAF, or similar edge rate limiting"
+      ]
+    },
+    "severity": "high",
+    "scaleThreshold": {
+      "metric": "public exposure",
+      "value": 0,
+      "label": "any publicly accessible endpoint"
+    },
+    "explanation": {
+      "plain": "Anyone can send as many requests as they want to your API with no limit. There is nothing stopping a bot, a script, or even an accidental loop from flooding your system.",
+      "analogy": "Like a store with no limit on free samples. Most people take one, but all it takes is one person grabbing the entire tray to ruin it for everyone. And unlike a store, a bot can grab thousands of trays per second.",
+      "consequence": "Without rate limiting, you are vulnerable to brute-force attacks on login, scraping of your data, and accidental denial-of-service from misbehaving clients. A single bad actor can take down your entire system."
+    },
+    "fix": {
+      "summary": "Add rate limiting to public-facing endpoints",
+      "detail": "Start with authentication endpoints (login, signup, password reset) and any public API routes. A simple per-IP rate limit (e.g., 100 requests per minute) prevents the worst abuse. For more sophisticated protection, consider an API gateway or edge service like Cloudflare.",
+      "relatedGlossary": ["rate-limiting", "api-gateway"],
+      "relatedStory": { "storySlug": "online-store", "stageId": "stage-4" }
+    },
+    "frameworks": {
+      "nextjs": "Check for rate limiting middleware in middleware.ts or API routes. Look for next-rate-limit, upstash ratelimit, or Vercel's built-in protection.",
+      "express": "Look for express-rate-limit in package.json and its configuration in the middleware stack.",
+      "django": "Check for django-ratelimit decorators or DRF throttle classes in REST_FRAMEWORK settings.",
+      "rails": "Look for rack-attack in Gemfile and its configuration in config/initializers/."
+    }
+  },
+  {
+    "id": "no-connection-pooling",
+    "category": "database",
+    "pattern": {
+      "description": "Database connections opened and closed on every request instead of being pooled and reused",
+      "signals": [
+        "New database client created per request",
+        "No connection pool configuration visible",
+        "Serverless functions connecting directly to database without a pooler",
+        "No PgBouncer, connection pool size setting, or Prisma connection pool config",
+        "Supabase or Neon without connection pooling mode enabled in serverless context"
+      ]
+    },
+    "severity": "medium",
+    "scaleThreshold": {
+      "metric": "concurrent requests",
+      "value": 50,
+      "label": "~50 concurrent requests"
+    },
+    "explanation": {
+      "plain": "Every request to your app opens a brand new connection to the database, uses it once, then throws it away. Opening a database connection is expensive, like dialing a phone number from scratch each time.",
+      "analogy": "Imagine a company where every time an employee needs to talk to the warehouse, they have to drive there, have one conversation, and drive back. A connection pool is like having a dedicated phone line to the warehouse that stays open all day.",
+      "consequence": "Databases have a limit on how many connections they can handle at once (often 20-100 for managed databases). Without pooling, you will hit that limit quickly under load, and new requests will fail with connection errors."
+    },
+    "fix": {
+      "summary": "Configure connection pooling for your database client",
+      "detail": "Most ORMs support connection pooling out of the box. For serverless environments (Vercel, AWS Lambda), use an external pooler like PgBouncer or your database provider's pooling mode (Supabase has a pooler built in, Neon has serverless driver). This reuses connections instead of creating new ones.",
+      "relatedGlossary": ["database"],
+      "relatedStory": null
+    },
+    "frameworks": {
+      "nextjs": "Check Prisma connection pool settings in schema.prisma (connection_limit). For Vercel deployment, check if using Prisma Accelerate or an external pooler. Check Supabase connection string (pooler vs direct).",
+      "express": "Look for pool configuration in pg, mysql2, or knex setup. Check if pool.max and pool.min are set.",
+      "django": "Check CONN_MAX_AGE in DATABASES setting. 0 means no pooling. Also check for django-db-connection-pool or pgbouncer.",
+      "rails": "Check database.yml for pool size setting. Default is 5 per process, which may be too low."
+    }
+  },
+  {
+    "id": "sync-heavy-operations",
+    "category": "api",
+    "pattern": {
+      "description": "Slow operations (email, image processing, PDF generation, API calls) running synchronously in request handlers, making users wait",
+      "signals": [
+        "Email sending (SendGrid, Nodemailer, SES) directly in API route handlers",
+        "Image processing or resizing in request path",
+        "PDF generation during request handling",
+        "Multiple sequential external API calls in a single endpoint",
+        "File upload processing blocking the response",
+        "No message queue or background job system configured"
+      ]
+    },
+    "severity": "medium",
+    "scaleThreshold": {
+      "metric": "concurrent users",
+      "value": 100,
+      "label": "~100 concurrent users"
+    },
+    "explanation": {
+      "plain": "When a user triggers an action, your system does everything right then and there before responding. If sending a confirmation email takes 2 seconds, the user stares at a loading spinner for 2 extra seconds.",
+      "analogy": "Like a cashier who, after every purchase, walks to the back room to hand-deliver a receipt to the accounting department before helping the next customer. The line backs up because the cashier keeps disappearing.",
+      "consequence": "Slow operations block the request, increasing response times and tying up server resources. Under load, these slow requests pile up and can exhaust your server's ability to handle new requests."
+    },
+    "fix": {
+      "summary": "Move slow operations to background jobs",
+      "detail": "Send emails, process images, and make non-critical API calls in background jobs instead of during the request. The user gets an immediate response, and the heavy work happens behind the scenes. Start with a simple queue (BullMQ for Node, Celery for Python, Sidekiq for Ruby) or a managed service (Inngest, Trigger.dev).",
+      "relatedGlossary": ["async", "message-queue"],
+      "relatedStory": { "storySlug": "ride-sharing", "stageId": "stage-4" }
+    },
+    "frameworks": {
+      "nextjs": "Look for email sending, image processing, or long API calls inside API route handlers or server actions. Check if any background job system (Inngest, Trigger.dev, BullMQ) is configured.",
+      "express": "Check route handlers for synchronous calls to email services, file processing, or external APIs. Look for Bull/BullMQ in package.json.",
+      "django": "Check views for synchronous email sending (send_mail), Pillow image processing, or long API calls. Look for Celery in requirements.",
+      "rails": "Check controllers for synchronous mailer calls or heavy processing. Look for Sidekiq or ActiveJob configuration."
+    }
+  },
+  {
+    "id": "no-health-check",
+    "category": "infrastructure",
+    "pattern": {
+      "description": "No health check endpoint for load balancers, monitoring, or deployment verification",
+      "signals": [
+        "No /health, /healthz, /api/health, or /ping endpoint",
+        "No health check configuration in deployment files",
+        "No readiness or liveness probe in Kubernetes/Docker config",
+        "Load balancer or reverse proxy with no health check target"
+      ]
+    },
+    "severity": "low",
+    "scaleThreshold": {
+      "metric": "deployment complexity",
+      "value": 0,
+      "label": "any deployed application"
+    },
+    "explanation": {
+      "plain": "Your application has no simple way for external systems to check whether it is running correctly. Load balancers, monitoring tools, and deployment pipelines all need a quick way to ask 'are you alive and healthy?'",
+      "analogy": "Like a building with no fire alarm. Everything might be fine, but if something goes wrong, nobody knows until someone smells smoke. A health check is the fire alarm: a simple, automatic way to detect problems early.",
+      "consequence": "Without a health check, load balancers cannot detect when a server is unhealthy, monitoring tools cannot alert you, and deployment pipelines cannot verify that a new release is working before sending traffic to it."
+    },
+    "fix": {
+      "summary": "Add a /health endpoint that verifies critical dependencies",
+      "detail": "Create a simple endpoint that returns 200 OK when the app is running and can reach its database. It should check critical dependencies (database connection, cache connection) and return a clear status. Keep it lightweight so it does not add load.",
+      "relatedGlossary": ["health-check", "monitoring", "load-balancer"],
+      "relatedStory": { "storySlug": "ride-sharing", "stageId": "stage-3" }
+    },
+    "frameworks": {
+      "nextjs": "Look for /api/health or /api/healthz route. Check vercel.json for health check configuration.",
+      "express": "Look for a /health or /healthz route in the router setup.",
+      "django": "Look for a health check URL pattern or django-health-check in installed apps.",
+      "rails": "Look for a /health route in config/routes.rb or the rails-health-check gem."
+    }
+  },
+  {
+    "id": "secrets-in-source",
+    "category": "auth",
+    "pattern": {
+      "description": "API keys, passwords, or other secrets hardcoded in source code instead of environment variables",
+      "signals": [
+        "API keys or tokens visible as string literals in source files",
+        "Database connection strings with passwords in code",
+        "Hardcoded secrets in configuration files that are tracked in git",
+        ".env file committed to git (check .gitignore)",
+        "Secret values in client-side / frontend code",
+        "No .env.example or environment variable documentation"
+      ]
+    },
+    "severity": "critical",
+    "scaleThreshold": {
+      "metric": "security exposure",
+      "value": 0,
+      "label": "any codebase with secrets"
+    },
+    "explanation": {
+      "plain": "Your passwords or API keys are written directly in your code files. Anyone who can see your code (including anyone with access to your git repository) can see your secrets.",
+      "analogy": "Like writing your bank PIN on the outside of your wallet. It works, technically, but anyone who picks up your wallet now has everything they need.",
+      "consequence": "If your code is on GitHub (even a private repo), anyone with access can extract secrets. Secrets in git history persist even after you delete them from the current code. Leaked API keys can be exploited within minutes by automated scanners."
+    },
+    "fix": {
+      "summary": "Move all secrets to environment variables and ensure .env is in .gitignore",
+      "detail": "Store secrets in .env files locally and in your hosting provider's environment variable settings for production. Add .env to .gitignore. Create a .env.example file listing required variables without values. If secrets were ever committed to git, rotate them immediately: the old values are in your git history forever.",
+      "relatedGlossary": [],
+      "relatedStory": null
+    },
+    "frameworks": {
+      "nextjs": "Check for hardcoded values in next.config.js, API routes, or server components. Verify .env is in .gitignore. Check that client-exposed vars use NEXT_PUBLIC_ prefix intentionally.",
+      "express": "Check for hardcoded connection strings or API keys in app.js, config files, or route handlers. Look for dotenv in dependencies.",
+      "django": "Check settings.py for hardcoded SECRET_KEY, database passwords, or API keys. Look for django-environ or python-decouple.",
+      "rails": "Check for hardcoded secrets in config/. Look for credentials.yml.enc or Rails.application.credentials usage."
+    }
+  },
+  {
+    "id": "no-indexing-strategy",
+    "category": "database",
+    "pattern": {
+      "description": "Database tables with no visible indexing strategy for frequently queried columns",
+      "signals": [
+        "Database schema with tables but no index definitions beyond primary keys",
+        "Queries filtering or sorting on columns that are not indexed",
+        "Foreign key columns without indexes",
+        "Search or lookup features querying un-indexed text columns",
+        "No migration files that add indexes"
+      ]
+    },
+    "severity": "medium",
+    "scaleThreshold": {
+      "metric": "database rows",
+      "value": 100000,
+      "label": "~100,000 rows in a table"
+    },
+    "explanation": {
+      "plain": "Your database tables do not have indexes on the columns you search by most often. Without indexes, every query has to scan every row in the table to find what it is looking for.",
+      "analogy": "Like a textbook with no index at the back. To find the section on 'photosynthesis,' you would have to flip through every single page. With 50 pages that is annoying. With 500,000 pages, it takes so long the reader gives up.",
+      "consequence": "Query performance degrades linearly with table size. A query that takes 10ms on 1,000 rows could take 10 seconds on 1,000,000 rows without proper indexes."
+    },
+    "fix": {
+      "summary": "Add indexes on columns used in WHERE clauses, JOINs, and ORDER BY",
+      "detail": "Identify your most common queries and add indexes on the columns they filter by. Start with foreign keys (used in JOINs) and any column used in WHERE or ORDER BY. Most ORMs make this easy with a migration. Over-indexing has a cost (slower writes), so focus on the columns that matter most.",
+      "relatedGlossary": ["index", "database"],
+      "relatedStory": { "storySlug": "online-store", "stageId": "stage-2" }
+    },
+    "frameworks": {
+      "nextjs": "Check Prisma schema for @@index directives. Look at migration files for CREATE INDEX statements.",
+      "express": "Check Sequelize model definitions for indexes option, or Knex migration files for .index() calls.",
+      "django": "Check model Meta classes for indexes or index_together. Look for db_index=True on model fields.",
+      "rails": "Check migration files for add_index calls. Look for index: true in column definitions."
+    }
+  },
+  {
+    "id": "n-plus-one-queries",
+    "category": "database",
+    "pattern": {
+      "description": "Code that fetches a list of records and then makes a separate database query for each item's related data",
+      "signals": [
+        "Loop that fetches related records one at a time inside a .map() or .forEach()",
+        "ORM queries inside loops without eager loading (no include/populate/prefetch)",
+        "Multiple sequential await calls to the database inside iteration",
+        "GraphQL resolvers that trigger individual queries per field without DataLoader",
+        "API endpoints that return nested data but fetch it relation by relation"
+      ]
+    },
+    "severity": "high",
+    "scaleThreshold": {
+      "metric": "list size",
+      "value": 50,
+      "label": "~50 items in a list"
+    },
+    "explanation": {
+      "plain": "When your app loads a list of items (like posts with their authors), it fetches the list first, then goes back to the database separately for each item's related data. A page showing 50 posts makes 51 database queries instead of 2.",
+      "analogy": "Like placing a restaurant order by making a separate phone call for each item. 'I would like a burger.' Hang up. Call again. 'And fries.' Hang up. Call again. 'And a drink.' Instead of ordering everything at once, you are paying the overhead of dialing 50 times.",
+      "consequence": "Response times scale linearly with list size. A page with 10 items might be fast, but 100 items means 101 queries, which can take seconds. This is one of the most common performance problems in web applications."
+    },
+    "fix": {
+      "summary": "Use eager loading to fetch related data in a single query",
+      "detail": "Most ORMs support eager loading: Prisma's include, Django's select_related/prefetch_related, Rails' includes, Sequelize's include. This fetches related data in one or two queries instead of N+1. For GraphQL, use DataLoader to batch individual field lookups.",
+      "relatedGlossary": ["database"],
+      "relatedStory": null
+    },
+    "frameworks": {
+      "nextjs": "Check Prisma queries for missing include on relations. Look for loops that make individual findUnique/findFirst calls.",
+      "express": "Check Sequelize queries for missing include or Mongoose queries without .populate(). Look for database calls inside loops.",
+      "django": "Look for querysets accessed in template loops without select_related() or prefetch_related(). Check for queries inside for loops in views.",
+      "rails": "Look for N+1 warnings in logs. Check for .each loops that access associations without .includes() on the initial query."
+    }
+  },
+  {
+    "id": "no-error-boundary",
+    "category": "code-quality",
+    "pattern": {
+      "description": "No global error handling, meaning unhandled errors crash the application or show raw error details to users",
+      "signals": [
+        "No global error handler or error boundary component",
+        "No try-catch around critical operations",
+        "No custom error pages (404, 500)",
+        "Raw error messages or stack traces exposed in API responses",
+        "No error logging or monitoring service configured (Sentry, LogRocket, etc.)",
+        "Unhandled promise rejections with no global handler"
+      ]
+    },
+    "severity": "medium",
+    "scaleThreshold": {
+      "metric": "users",
+      "value": 0,
+      "label": "any user-facing application"
+    },
+    "explanation": {
+      "plain": "When something goes wrong in your application, there is no safety net to catch the error gracefully. Users might see a blank page, a raw error message, or technical details they should not see.",
+      "analogy": "Like a trapeze artist performing without a safety net. Most of the time the act goes perfectly. But when it does not, the consequences are much worse than they need to be. The net does not prevent falls; it prevents falls from being catastrophic.",
+      "consequence": "Users see confusing error pages or raw stack traces (which can leak sensitive information). Errors go unnoticed because nobody is tracking them. The same bug can affect hundreds of users before anyone on the team knows."
+    },
+    "fix": {
+      "summary": "Add global error handling and error monitoring",
+      "detail": "Add a global error boundary (React ErrorBoundary for frontend, global exception handler for API). Create custom error pages (404, 500) that are helpful, not scary. Set up error monitoring (Sentry is the most common) to catch and alert on errors automatically.",
+      "relatedGlossary": ["graceful-degradation"],
+      "relatedStory": null
+    },
+    "frameworks": {
+      "nextjs": "Check for error.tsx files in the app directory (Next.js error boundaries). Look for not-found.tsx. Check for Sentry or error monitoring in dependencies.",
+      "express": "Look for app.use((err, req, res, next) => ...) error middleware at the end of the middleware stack. Check for process.on('unhandledRejection').",
+      "django": "Check for custom HANDLER404 and HANDLER500 in urls.py. Look for Sentry SDK or custom middleware.",
+      "rails": "Check for rescue_from in ApplicationController. Look for custom error pages in public/ or error handling middleware."
+    }
+  },
+  {
+    "id": "no-env-config",
+    "category": "infrastructure",
+    "pattern": {
+      "description": "No separation between development and production configuration, using the same settings everywhere",
+      "signals": [
+        "No .env file or environment variable usage",
+        "Hardcoded URLs that point to localhost or development services in production code",
+        "No environment-specific configuration (dev/staging/prod)",
+        "Database URLs or API endpoints that do not change between environments",
+        "No NODE_ENV, RAILS_ENV, DJANGO_SETTINGS_MODULE, or equivalent checks"
+      ]
+    },
+    "severity": "medium",
+    "scaleThreshold": {
+      "metric": "deployment environments",
+      "value": 2,
+      "label": "as soon as you have more than one environment"
+    },
+    "explanation": {
+      "plain": "Your application uses the same configuration everywhere. There is no way to run it with a test database locally and a real database in production without changing the code.",
+      "analogy": "Like a shipping company that uses the same address for their warehouse and their storefront. It works when both are in the same building, but the moment you need to move one, you have to rewrite every shipping label.",
+      "consequence": "Deploying becomes risky because production settings might leak into development (sending real emails from your laptop) or development settings might leak into production (connecting to localhost). Makes it hard to test safely."
+    },
+    "fix": {
+      "summary": "Use environment variables for all configuration that changes between environments",
+      "detail": "Move database URLs, API keys, feature flags, and service endpoints into environment variables. Use .env files for local development and your hosting provider's environment settings for production. Create a .env.example file documenting all required variables.",
+      "relatedGlossary": [],
+      "relatedStory": null
+    },
+    "frameworks": {
+      "nextjs": "Check for .env.local and .env.production files. Verify process.env usage in config. Check next.config for hardcoded values.",
+      "express": "Look for dotenv in dependencies and config/ directory. Check for process.env usage vs hardcoded values.",
+      "django": "Check for django-environ or python-decouple. Look at settings.py for os.environ.get() calls vs hardcoded values.",
+      "rails": "Check for dotenv-rails. Look at config/database.yml and config/environments/ for ENV usage."
+    }
+  },
+  {
+    "id": "no-service-layer",
+    "category": "code-quality",
+    "pattern": {
+      "description": "API routes or controllers contain complex business logic and direct database access, mixing concerns",
+      "signals": [
+        "Route handlers that are longer than ~50 lines with mixed database queries, validation, and business logic",
+        "Complex database operations directly in API route files",
+        "Business rules (pricing calculations, permission checks, workflow logic) embedded in controllers",
+        "Duplicated database query patterns across multiple route handlers",
+        "No lib/, services/, or similar directory separating business logic from routing"
+      ]
+    },
+    "severity": "low",
+    "scaleThreshold": {
+      "metric": "codebase complexity",
+      "value": 0,
+      "label": "when the codebase has more than a handful of endpoints"
+    },
+    "explanation": {
+      "plain": "Your API routes are doing too many jobs at once: handling the request, running business logic, and talking to the database all in the same function. This makes the code harder to understand, test, and change.",
+      "analogy": "Like a receptionist who also does accounting, manages inventory, and handles customer complaints. They can do it all when the business is tiny, but it quickly becomes a mess. Splitting responsibilities means each person does their job well.",
+      "consequence": "Code becomes harder to modify because a single change might touch routing, business logic, and database access. Testing becomes difficult because you cannot test business logic without spinning up the whole API. Logic gets duplicated across routes."
+    },
+    "fix": {
+      "summary": "Extract business logic into a service or lib layer",
+      "detail": "Create a services/ or lib/ directory with modules that encapsulate business logic and database access. Route handlers should only handle: parsing the request, calling the service, and formatting the response. This makes the code testable, reusable, and easier to understand.",
+      "relatedGlossary": [],
+      "relatedStory": null
+    },
+    "frameworks": {
+      "nextjs": "Check API route handlers and server actions for length and complexity. Look for database queries mixed with business logic in route.ts files.",
+      "express": "Look at route handler size and complexity. Check if there is a separation between routes/ and services/ or controllers/ and models/.",
+      "django": "Check views.py for complex logic. Look for a services.py or utils.py pattern. Fat views are a common Django anti-pattern.",
+      "rails": "Check controllers for fat controller anti-pattern. Look for service objects in app/services/."
+    }
+  },
+  {
+    "id": "single-database-bottleneck",
+    "category": "database",
+    "pattern": {
+      "description": "All reads and writes going to a single database instance with no read replicas or separation",
+      "signals": [
+        "Single database connection string for all operations",
+        "No read replica configuration",
+        "No database URL differentiation between read and write operations",
+        "High-traffic read operations sharing the same database as writes",
+        "Analytics or reporting queries running on the primary database"
+      ]
+    },
+    "severity": "low",
+    "scaleThreshold": {
+      "metric": "concurrent users",
+      "value": 1000,
+      "label": "~1,000 concurrent users"
+    },
+    "explanation": {
+      "plain": "All your database operations, both reading data and writing data, go to the same single database. This is completely normal for most applications, but becomes a bottleneck at high scale.",
+      "analogy": "Like a library with one desk for both checking out books and returning them. It works well until the line gets long and people waiting to return a quick book are stuck behind someone checking out twenty.",
+      "consequence": "At high traffic, read operations (which are usually more frequent) compete with writes for the same resources. A heavy report or analytics query can slow down the entire application."
+    },
+    "fix": {
+      "summary": "Add read replicas for read-heavy operations",
+      "detail": "Most managed databases (RDS, Supabase, PlanetScale, Neon) support read replicas. Route read queries to replicas and writes to the primary. Start with analytics/reporting queries, then move high-traffic read endpoints. Note: This introduces eventual consistency, which means reads from a replica might be slightly behind the primary.",
+      "relatedGlossary": ["read-replica", "horizontal-scaling", "eventual-consistency"],
+      "relatedStory": { "storySlug": "online-store", "stageId": "stage-4" }
+    },
+    "frameworks": {
+      "nextjs": "Check for a single DATABASE_URL with no read replica variant. Look at Prisma configuration for read replica support.",
+      "express": "Check database configuration for single vs multiple connection strings.",
+      "django": "Check DATABASES setting for multiple database definitions and DATABASE_ROUTERS.",
+      "rails": "Check database.yml for replica configuration or ActiveRecord multi-database setup."
+    }
+  },
+  {
+    "id": "monolith-no-boundaries",
+    "category": "code-quality",
+    "pattern": {
+      "description": "Large application with no clear module boundaries, where everything can access everything",
+      "signals": [
+        "Imports reaching deep across unrelated feature directories",
+        "No clear feature or domain-based directory structure",
+        "Shared mutable state accessed from many different parts of the codebase",
+        "Circular dependencies between modules",
+        "God objects or utility files imported everywhere",
+        "Single flat directory of route handlers with 20+ files"
+      ]
+    },
+    "severity": "low",
+    "scaleThreshold": {
+      "metric": "codebase size",
+      "value": 0,
+      "label": "when the codebase grows beyond a few features"
+    },
+    "explanation": {
+      "plain": "Your application has grown, but its code is not organized into clear sections. Different features reach into each other freely, which means changing one thing can unexpectedly break something else.",
+      "analogy": "Like an office with no walls or departments. Everyone sits in one big room and can reach into anyone's desk. It feels open and flexible, but when someone rearranges their desk, they accidentally knock over three other people's things.",
+      "consequence": "Changes become risky because it is hard to know what depends on what. New developers take longer to onboard because there is no clear map of the codebase. Bugs appear in seemingly unrelated features after changes."
+    },
+    "fix": {
+      "summary": "Organize code into feature or domain modules with clear boundaries",
+      "detail": "Group related code by feature or domain (e.g., auth/, billing/, notifications/) rather than by technical layer. Each module should have a clear public interface and minimize dependencies on other modules' internals. This does not mean microservices. A well-organized monolith is better than a poorly organized one.",
+      "relatedGlossary": ["monolith", "microservices"],
+      "relatedStory": { "storySlug": "ride-sharing", "stageId": "stage-5" }
+    },
+    "frameworks": {
+      "nextjs": "Check if the app directory is organized by feature or is a flat list of routes. Look for shared code organization in lib/ or components/.",
+      "express": "Check if routes and business logic are organized by feature or by layer (all routes together, all models together).",
+      "django": "Check app structure. Each Django app should be a cohesive module. Look for apps that have grown too large or that import from each other heavily.",
+      "rails": "Check for concerns, services, or domain organization. Look for models or controllers that are unusually large."
+    }
+  }
+]

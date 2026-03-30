@@ -1,0 +1,106 @@
+{
+  "architecture": {
+    "monolith": {
+      "concept": "Monolith",
+      "analogy": "A single-owner restaurant where one chef handles everything. Works beautifully when small, becomes a bottleneck when busy.",
+      "extendedAnalogy": "When the restaurant is new and serving 20 customers a night, one talented chef can handle appetizers, mains, desserts, and drinks. They know the whole menu, they can adapt quickly, and there is zero coordination overhead. But as the restaurant gets popular and serves 200 customers, that one chef becomes the bottleneck. They cannot cook 10 dishes simultaneously. The solution is not to replace the chef with a robot. It is to hire more cooks and give each one a station: one for grilling, one for pasta, one for desserts. Same kitchen, same restaurant, but now work happens in parallel.",
+      "relatedTerms": ["microservices", "horizontal-scaling"]
+    },
+    "microservices": {
+      "concept": "Microservices",
+      "analogy": "A food court where each stall specializes in one cuisine. Each can expand or close independently.",
+      "extendedAnalogy": "A food court works because each stall is independent. The pizza place can hire more staff during lunch rush without affecting the sushi counter. If the burger joint closes for renovation, everyone else keeps serving. But food courts also have downsides: customers have to walk between stalls, there is no single waiter to coordinate a multi-course meal, and the shared seating area needs its own management. Microservices have the same trade-off: independence in exchange for coordination complexity.",
+      "relatedTerms": ["monolith", "api-gateway", "message-queue"]
+    },
+    "api-gateway": {
+      "concept": "API Gateway",
+      "analogy": "A hotel concierge desk. Guests do not need to know which department handles their request.",
+      "extendedAnalogy": "When you ask the hotel concierge for a restaurant reservation, a room upgrade, and a wake-up call, you make one trip to one desk. The concierge figures out that reservations go to the restaurant, upgrades to the front desk manager, and wake-up calls to the phone system. You do not need to know the hotel's internal org chart. An API gateway works the same way: one entry point that routes your request to the right service.",
+      "relatedTerms": ["load-balancer", "microservices", "rate-limiting"]
+    },
+    "load-balancer": {
+      "concept": "Load Balancer",
+      "analogy": "A restaurant host who seats guests across all available tables so no single waiter gets overwhelmed.",
+      "extendedAnalogy": "Without a host, every customer would walk in and go to the first waiter they see. That waiter would be slammed while others stand idle. The host distributes customers evenly, knows which sections are full, and can stop seating a section if the waiter calls in sick. Load balancers do the same for web servers: distribute requests evenly, know which servers are healthy, and stop sending traffic to servers that are struggling.",
+      "relatedTerms": ["horizontal-scaling", "health-check", "redundancy"]
+    },
+    "cdn": {
+      "concept": "Content Delivery Network",
+      "analogy": "A franchise restaurant chain with locations in every city, serving the same menu from nearby kitchens.",
+      "extendedAnalogy": "If there was only one restaurant in the country, customers in distant cities would wait hours for delivery. A franchise solves this by putting a kitchen in every major city, each serving the same menu. The central kitchen designs the recipes (origin server), and each franchise location (CDN edge node) serves customers from nearby. When the menu changes, each location updates. Customers barely notice the central kitchen exists.",
+      "relatedTerms": ["cache", "server", "horizontal-scaling"]
+    }
+  },
+  "data": {
+    "cache": {
+      "concept": "Cache",
+      "analogy": "A cookbook on the kitchen counter instead of in the bookshelf. Limited space, but instant access.",
+      "extendedAnalogy": "Your kitchen counter can hold maybe 3-4 cookbooks. The bookshelf in the living room holds hundreds. When you are cooking dinner, you grab the recipes you need and put them on the counter. You do not walk to the bookshelf every time you need to check a step. But counter space is limited, so you only keep tonight's recipes there. Tomorrow you swap them out. Caching works the same way: keep the most-used data in fast storage, and accept that it might be slightly outdated compared to the source.",
+      "relatedTerms": ["in-memory-store", "cdn", "consistency"]
+    },
+    "database": {
+      "concept": "Database",
+      "analogy": "A library's filing system. Every piece of data has a shelf and label so you can always find it, even years later.",
+      "extendedAnalogy": "A library does not just throw books in a pile. Each book has a catalog number, a shelf location, and a card in the index. When you need a book, you look it up in the index, find the shelf, and grab it. Databases work the same way: data is organized in tables (shelves), indexed for fast lookup (catalog), and stored permanently (the building is not going anywhere). The trade-off is that organizing and indexing takes effort, but it makes retrieval reliable and fast.",
+      "relatedTerms": ["index", "relational-database", "persistence"]
+    },
+    "read-replica": {
+      "concept": "Read Replica",
+      "analogy": "Extra copies of a popular library book. The original stays at the front desk for updates; readers grab copies from the shelves.",
+      "extendedAnalogy": "When a book is so popular that there is always a wait list, the library prints extra copies and puts them on different shelves. Readers can grab any copy. But only the front desk copy gets updates and annotations. Occasionally a reader might have a slightly outdated copy for a few minutes until the new annotations are distributed. This is the trade-off of read replicas: more capacity for reading, but writes still go to one place, and there is a brief delay before copies catch up.",
+      "relatedTerms": ["database", "eventual-consistency", "horizontal-scaling"]
+    },
+    "sharding": {
+      "concept": "Sharding",
+      "analogy": "A library that splits into branches: A-M goes east, N-Z goes west. Each is faster to navigate, and together they hold everything.",
+      "extendedAnalogy": "When a single library building gets too crowded, you do not just add more shelves (that is vertical scaling). You open branch libraries, each responsible for a portion of the collection. Visitors go to the right branch based on what they need. The downside: if you need books from both branches, you have to visit both. And deciding how to split the collection (by author? by topic? by neighborhood?) is a decision you are stuck with.",
+      "relatedTerms": ["database", "horizontal-scaling", "consistency"]
+    }
+  },
+  "reliability": {
+    "circuit-breaker": {
+      "concept": "Circuit Breaker",
+      "analogy": "An electrical circuit breaker that trips when too much current flows, preventing a fire.",
+      "extendedAnalogy": "When a short circuit happens in your home, the circuit breaker trips immediately. It does not keep trying to push electricity through a dangerous fault. After you fix the problem, you reset the breaker. In software, when a service you depend on starts failing, a circuit breaker stops sending requests to it (preventing a cascade of failures). After a cooldown period, it tries again. If the service is back, great. If not, it stays tripped.",
+      "relatedTerms": ["graceful-degradation", "timeout", "retry"]
+    },
+    "failover": {
+      "concept": "Failover",
+      "analogy": "Hospital backup generators that kick in automatically when main power fails.",
+      "extendedAnalogy": "A hospital cannot afford to lose power. Patients on life support, surgeries in progress, monitors tracking vitals. So every hospital has backup generators that activate within seconds of a power failure. Staff does not have to do anything — the switch is automatic. Failover in software works the same way: when the primary system goes down, a standby system takes over automatically, ideally fast enough that users never notice.",
+      "relatedTerms": ["redundancy", "health-check", "disaster-recovery"]
+    },
+    "graceful-degradation": {
+      "concept": "Graceful Degradation",
+      "analogy": "A department store during a power outage: elevators stop but stairs work, registers are down but staff takes cash.",
+      "extendedAnalogy": "The store does not close entirely just because the power went out. They adapt: customers use stairs, staff processes cash payments, the generator powers the emergency lights. The experience is worse, but the store is still functional. In software, graceful degradation means that when a subsystem fails (recommendations engine, image service, analytics), the core experience continues. Users might see a simpler page, but they can still do what they came to do.",
+      "relatedTerms": ["circuit-breaker", "failover", "monitoring"]
+    },
+    "rate-limiting": {
+      "concept": "Rate Limiting",
+      "analogy": "A theme park that limits how many people enter per hour so rides do not get dangerously overcrowded.",
+      "extendedAnalogy": "Even the most popular theme park has a maximum capacity. Without it, the park would be so packed that nobody enjoys any ride, lines wrap around the park, and safety becomes a concern. Rate limiting does the same for your API: it ensures that no single user (or bot) can consume so many resources that everyone else's experience suffers. The park is still open — it just controls the flow.",
+      "relatedTerms": ["api-gateway", "graceful-degradation"]
+    }
+  },
+  "scaling": {
+    "horizontal-scaling": {
+      "concept": "Horizontal Scaling",
+      "analogy": "Opening more coffee shop locations across town instead of building one massive shop.",
+      "extendedAnalogy": "When your single coffee shop has a line out the door every morning, you have two options: make the shop bigger (vertical scaling) or open a second location across town (horizontal scaling). A bigger shop has limits — you can only expand so far before you run out of real estate. But opening new locations scales almost indefinitely, and if one location has a plumbing issue, the others keep serving coffee. The trade-off: now you need a way to direct customers to the right location (load balancer) and a way to keep the menu consistent across all locations.",
+      "relatedTerms": ["vertical-scaling", "load-balancer"]
+    },
+    "vertical-scaling": {
+      "concept": "Vertical Scaling",
+      "analogy": "Replacing your kitchen with a bigger one: more counter space, faster oven, larger fridge. Works up to a point.",
+      "extendedAnalogy": "Vertical scaling is the most intuitive approach to handling more load: make the machine bigger. More RAM, faster CPU, bigger disk. It is simple (no architecture changes needed) and effective up to a point. But every machine has a ceiling — you cannot buy a server with infinite resources. And while you are upgrading, there is usually downtime. It is like renovating your kitchen: great results, but you cannot cook during construction.",
+      "relatedTerms": ["horizontal-scaling", "server"]
+    },
+    "connection-pooling": {
+      "concept": "Connection Pooling",
+      "analogy": "A dedicated phone line to the warehouse that stays open all day, instead of dialing from scratch for every question.",
+      "extendedAnalogy": "Opening a database connection is like making a phone call: you look up the number, dial, wait for an answer, authenticate yourself, and then finally ask your question. If you hang up after every question and redial for the next one, most of your time is spent on the call setup, not the actual conversation. Connection pooling keeps a set of open connections ready to use. When your code needs the database, it grabs an open connection, uses it, and returns it to the pool. No dialing required.",
+      "relatedTerms": ["database"]
+    }
+  }
+}

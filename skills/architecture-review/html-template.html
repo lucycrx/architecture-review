@@ -1,0 +1,1414 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Architecture Review — <!-- PROJECT_NAME --></title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --font-body: 'DM Sans', system-ui, -apple-system, sans-serif;
+  --font-mono: 'DM Mono', ui-monospace, 'Cascadia Code', monospace;
+
+  --bg: hsl(48, 14%, 97%);
+  --surface: hsl(0, 0%, 100%);
+  --surface-raised: hsl(48, 10%, 95%);
+  --diagram-bg: hsl(48, 10%, 95%);
+  --diagram-surface: hsl(0, 0%, 100%);
+  --diagram-border: hsl(40, 8%, 84%);
+  --diagram-text: hsl(0, 0%, 15%);
+  --diagram-text-dim: hsl(0, 0%, 45%);
+  --diagram-label: hsl(0, 0%, 35%);
+
+  --text: hsl(0, 0%, 10%);
+  --text-muted: hsl(0, 0%, 40%);
+  --text-dim: hsl(0, 0%, 45%);
+  --border: hsl(40, 8%, 88%);
+  --border-hover: hsl(40, 8%, 78%);
+  --highlight: hsl(0, 0%, 20%);
+
+  --risk-critical: hsl(4, 65%, 42%);
+  --risk-critical-bg: hsl(4, 65%, 95%);
+  --risk-high: hsl(24, 75%, 45%);
+  --risk-high-bg: hsl(24, 75%, 95%);
+  --risk-medium: hsl(42, 75%, 42%);
+  --risk-medium-bg: hsl(42, 75%, 94%);
+  --risk-low: hsl(210, 15%, 55%);
+  --risk-low-bg: hsl(210, 15%, 95%);
+
+  --cat-frontend: hsl(205, 45%, 55%);
+  --cat-api: hsl(215, 25%, 50%);
+  --cat-database: hsl(145, 35%, 45%);
+  --cat-cache: hsl(42, 65%, 55%);
+  --cat-auth: hsl(0, 35%, 50%);
+  --cat-external: hsl(8, 55%, 55%);
+  --cat-jobs: hsl(270, 30%, 55%);
+  --cat-storage: hsl(140, 25%, 50%);
+
+  --max-width: 1280px;
+
+  /* Type scale — 1.2 ratio, 6 stops */
+  --text-caption: 0.6875rem;   /* 11px — mono labels only */
+  --text-small: 0.75rem;       /* 12px — chips, meta, file paths */
+  --text-secondary: 0.8125rem; /* 13px — sublabels, evidence, meta values */
+  --text-body: 0.875rem;       /* 14px — descriptions, risk text, connections */
+  --text-subhead: 1rem;        /* 16px — risk titles, summary */
+  --text-heading: 1.25rem;     /* 20px — detail panel title */
+
+  /* Mono label — single canonical treatment */
+  --mono-size: var(--text-caption);
+  --mono-weight: 500;
+  --mono-tracking: 0.14em;
+}
+
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  font-family: var(--font-body);
+  background: var(--bg);
+  color: var(--text);
+  -webkit-font-smoothing: antialiased;
+  line-height: 1.55;
+}
+
+.shell { max-width: var(--max-width); margin: 0 auto; padding: 0 2rem 4rem; }
+
+/* ---- HEADER ---- */
+
+.header {
+  border-bottom: 1px solid var(--border);
+  background: var(--surface);
+  padding: 1.25rem 2rem;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+.header-inner {
+  max-width: var(--max-width);
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 2rem;
+}
+
+.header-left { display: flex; align-items: baseline; gap: 1rem; min-width: 0; }
+
+.project-name {
+  font-family: var(--font-mono);
+  font-size: var(--text-small);
+  font-weight: var(--mono-weight);
+  letter-spacing: var(--mono-tracking);
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.project-meta { font-size: var(--text-secondary); color: var(--text-dim); white-space: nowrap; }
+.risk-counts { display: flex; gap: 0.5rem; flex-shrink: 0; }
+
+.risk-chip {
+  font-family: var(--font-mono);
+  font-size: var(--mono-size);
+  font-weight: var(--mono-weight);
+  letter-spacing: var(--mono-tracking);
+  text-transform: uppercase;
+  padding: 0.25rem 0.6rem;
+  border: 1px solid;
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  cursor: pointer;
+  transition: opacity 0.2s ease;
+  outline: none;
+}
+
+.risk-chip:hover { opacity: 0.8; }
+.risk-chip:focus-visible { outline: 2px solid var(--highlight); outline-offset: 1px; }
+
+.risk-chip[data-severity="critical"] { color: var(--risk-critical); border-color: var(--risk-critical); background: var(--risk-critical-bg); }
+.risk-chip[data-severity="high"] { color: var(--risk-high); border-color: var(--risk-high); background: var(--risk-high-bg); }
+.risk-chip[data-severity="medium"] { color: var(--risk-medium); border-color: var(--risk-medium); background: var(--risk-medium-bg); }
+.risk-chip[data-severity="low"] { color: var(--risk-low); border-color: var(--risk-low); background: var(--risk-low-bg); }
+.risk-chip .count { font-weight: 700; font-size: var(--text-body); }
+
+.summary-strip { padding: 1.5rem 0; border-bottom: 1px solid var(--border); margin-bottom: 2rem; }
+.summary-text { font-size: var(--text-subhead); line-height: 1.6; }
+.summary-text strong { font-weight: 600; }
+
+.summary-overview {
+  font-size: var(--text-body);
+  line-height: 1.65;
+  color: var(--text-muted);
+  margin-top: 0.6rem;
+}
+
+.diagram-hint {
+  font-family: var(--font-mono);
+  font-size: var(--mono-size);
+  letter-spacing: 0.04em;
+  color: var(--text-dim);
+  margin-bottom: 0.75rem;
+  display: flex;
+  gap: 1.25rem;
+  flex-wrap: wrap;
+}
+
+.diagram-hint span {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.hint-key {
+  display: inline-block;
+  border: 1px solid var(--border);
+  padding: 0.1rem 0.35rem;
+  font-weight: var(--mono-weight);
+  color: var(--text-muted);
+}
+
+.section-label {
+  font-family: var(--font-mono);
+  font-size: var(--mono-size);
+  font-weight: var(--mono-weight);
+  letter-spacing: var(--mono-tracking);
+  text-transform: uppercase;
+  color: var(--text-dim);
+  margin-bottom: 1rem;
+}
+
+/* ============================================
+   ARCHITECTURE DIAGRAM
+   Dark blueprint style, containment-based
+   ============================================ */
+
+.map-section { margin-bottom: 3rem; }
+
+.map-layout {
+  display: flex;
+  align-items: flex-start;
+  gap: 1.5rem;
+}
+
+.diagram {
+  background: var(--diagram-bg);
+  border: 1px solid var(--diagram-border);
+  padding: 2rem;
+  flex: 1;
+  min-width: 0;
+  transition: flex 0.2s ease;
+}
+
+/* Category group — outer container with floating edge label */
+.cat-group {
+  border: 1px solid var(--diagram-border);
+  padding: 0.75rem;
+  position: relative;
+  background: var(--diagram-surface);
+}
+
+.cat-group-label {
+  position: absolute;
+  top: -0.55rem;
+  left: 0.75rem;
+  font-family: var(--font-mono);
+  font-size: var(--mono-size);
+  font-weight: var(--mono-weight);
+  letter-spacing: var(--mono-tracking);
+  text-transform: uppercase;
+  padding: 0 0.4rem;
+  background: var(--diagram-surface);
+  z-index: 1;
+}
+
+/* Component card inside a category group */
+.comp-card {
+  border: 1px solid var(--diagram-border);
+  padding: 0.6rem 0.75rem;
+  background: var(--diagram-bg);
+  cursor: pointer;
+  transition: border-color 0.2s ease, transform 0.2s ease, background 0.2s ease, color 0.2s ease;
+  position: relative;
+  outline: none;
+}
+
+.comp-card:hover { border-color: var(--diagram-label); transform: translateY(-1px); }
+.comp-card:active { transform: translateY(0); background: var(--diagram-surface); }
+.comp-card:focus-visible { border-color: var(--highlight); outline: 2px solid var(--highlight); outline-offset: 1px; }
+
+.comp-card.selected {
+  background: color-mix(in oklch, var(--cat-color) 10%, var(--diagram-surface));
+  border-color: var(--cat-color);
+  border-left: 3px solid var(--cat-color);
+}
+.comp-card.selected .comp-label { color: var(--text); }
+.comp-card.selected .comp-icon { opacity: 1; }
+.comp-card.selected .conn-tag { border-color: color-mix(in oklch, var(--cat-color) 30%, var(--diagram-border)); }
+.comp-card.selected .conn-tag:hover { border-color: var(--cat-color); }
+
+.comp-card + .comp-card { margin-top: 0.4rem; }
+
+.comp-icon {
+  flex-shrink: 0;
+  width: 16px;
+  height: 16px;
+  opacity: 0.8;
+}
+
+.comp-icon svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.comp-top {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.comp-label {
+  font-size: var(--text-body);
+  font-weight: 600;
+  color: var(--diagram-text);
+  line-height: 1.3;
+}
+
+.comp-sublabel {
+  font-size: var(--text-secondary);
+  color: var(--diagram-text-dim);
+  margin-top: 0.15rem;
+}
+
+/* Risk indicator — thin top border */
+.comp-card.risk-critical { border-top: 2px solid var(--risk-critical); }
+.comp-card.risk-high { border-top: 2px solid var(--risk-high); }
+.comp-card.risk-medium { border-top: 2px solid var(--risk-medium); }
+.comp-card.risk-low { border-top: 2px solid var(--risk-low); }
+
+/* Side-by-side components inside a group */
+.comp-row {
+  display: flex;
+  gap: 0.4rem;
+}
+
+.comp-row .comp-card { flex: 1; }
+.comp-row .comp-card + .comp-card { margin-top: 0; }
+
+/* ---- Layout rows for category groups ---- */
+
+.diagram-row {
+  display: flex;
+  gap: 0.75rem;
+}
+
+.diagram-row .cat-group { flex: 1; }
+
+/* ---- Tier spacing ---- */
+
+.diagram-row + .diagram-row { margin-top: 0.75rem; }
+
+/* ---- Component connection tags ---- */
+
+.comp-connections {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+  margin-top: 0.4rem;
+}
+
+.conn-tag {
+  font-family: var(--font-mono);
+  font-size: var(--mono-size);
+  letter-spacing: 0.03em;
+  color: var(--diagram-text-dim);
+  background: var(--diagram-surface);
+  border: 1px dashed var(--diagram-border);
+  padding: 0.15rem 0.4rem;
+  cursor: pointer;
+  transition: border-color 0.15s ease, color 0.15s ease;
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.conn-tag:hover {
+  border-color: var(--diagram-text-dim);
+  color: var(--diagram-text);
+}
+
+.conn-tag:focus-visible {
+  outline: 2px solid var(--highlight);
+  outline-offset: 1px;
+}
+
+.conn-tag .conn-arrow {
+  opacity: 0.5;
+}
+
+.conn-tag .conn-target {
+  font-weight: var(--mono-weight);
+  color: var(--diagram-text);
+}
+
+/* Animated dot on connection tags */
+.conn-tag::before {
+  content: '';
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: var(--cat-frontend);
+  animation: connPulse 2s ease-in-out infinite;
+  flex-shrink: 0;
+}
+
+@keyframes connPulse {
+  0%, 100% { opacity: 0.3; transform: scale(0.8); }
+  50% { opacity: 1; transform: scale(1.2); }
+}
+
+/* Stagger pulse animation */
+.comp-connections .conn-tag:nth-child(2)::before { animation-delay: 0.3s; }
+.comp-connections .conn-tag:nth-child(3)::before { animation-delay: 0.6s; }
+.comp-connections .conn-tag:nth-child(4)::before { animation-delay: 0.9s; }
+
+/* Highlight target card when hovering a connection tag */
+.comp-card.conn-highlight {
+  border-color: var(--highlight);
+  outline: 1px solid var(--highlight);
+  outline-offset: -1px;
+}
+
+/* ---- DETAIL PANEL ---- */
+
+.detail-panel {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  flex-shrink: 0;
+  position: sticky;
+  top: 5rem;
+  align-self: flex-start;
+  max-height: calc(100vh - 6rem);
+  overflow: hidden;
+  width: 0;
+  padding: 0;
+  border-width: 0;
+  opacity: 0;
+  transition: width 0.3s cubic-bezier(0.25, 0, 0.2, 1),
+              padding 0.3s cubic-bezier(0.25, 0, 0.2, 1),
+              border-width 0.3s cubic-bezier(0.25, 0, 0.2, 1),
+              opacity 0.25s cubic-bezier(0.25, 0, 0.2, 1);
+}
+
+.detail-panel.visible {
+  width: 340px;
+  padding: 1.5rem;
+  border-width: 1px;
+  opacity: 1;
+  overflow-y: auto;
+}
+
+.detail-panel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 0.75rem;
+}
+
+.detail-close {
+  font-family: var(--font-mono);
+  font-size: var(--text-small);
+  color: var(--text-dim);
+  cursor: pointer;
+  border: 1px solid var(--border);
+  background: none;
+  padding: 0.2rem 0.5rem;
+  transition: border-color 0.2s ease, color 0.2s ease;
+}
+
+.detail-close:hover { border-color: var(--text-muted); color: var(--text); }
+.detail-close:focus-visible { outline: 2px solid var(--highlight); outline-offset: 1px; }
+.detail-category {
+  font-family: var(--font-mono);
+  font-size: var(--mono-size);
+  font-weight: var(--mono-weight);
+  letter-spacing: var(--mono-tracking);
+  text-transform: uppercase;
+  display: inline-block;
+  padding: 0.1rem 0.4rem;
+  color: white;
+  margin-bottom: 0.35rem;
+}
+
+.detail-title { font-size: var(--text-heading); font-weight: 700; line-height: 1.2; }
+
+.detail-description {
+  font-size: var(--text-body);
+  line-height: 1.65;
+  color: var(--text-muted);
+  margin-bottom: 1rem;
+}
+
+.detail-columns { display: grid; grid-template-columns: 1fr; gap: 1.25rem; }
+
+.detail-col-title {
+  font-family: var(--font-mono);
+  font-size: var(--mono-size);
+  letter-spacing: var(--mono-tracking);
+  text-transform: uppercase;
+  color: var(--text-dim);
+  margin-bottom: 0.4rem;
+}
+
+.detail-file { font-family: var(--font-mono); font-size: var(--text-small); color: var(--text-muted); padding: 0.2rem 0; }
+.detail-connection { font-size: var(--text-body); color: var(--text-muted); padding: 0.2rem 0; line-height: 1.5; }
+.detail-connection-target { font-weight: 600; color: var(--text); }
+
+/* ---- RISK REPORT ---- */
+
+.risk-section { margin-bottom: 3rem; }
+
+.risk-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  background: var(--border);
+  border: 1px solid var(--border);
+}
+
+.risk-card { background: var(--surface); cursor: pointer; transition: background 0.15s ease; outline: none; }
+.risk-card:hover { background: var(--surface-raised); }
+.risk-card:focus-visible { outline: 2px solid var(--highlight); outline-offset: -2px; }
+
+.risk-card-header {
+  display: grid;
+  grid-template-columns: 5rem 1fr auto;
+  align-items: center;
+  padding: 1rem 1.25rem;
+  gap: 1rem;
+  user-select: none;
+}
+
+.risk-severity {
+  font-family: var(--font-mono);
+  font-size: var(--mono-size);
+  font-weight: 700;
+  letter-spacing: var(--mono-tracking);
+  text-transform: uppercase;
+  padding: 0.25rem 0;
+  text-align: center;
+  border: 1px solid;
+}
+
+.risk-severity.critical { color: var(--risk-critical); border-color: var(--risk-critical); background: var(--risk-critical-bg); }
+.risk-severity.high { color: var(--risk-high); border-color: var(--risk-high); background: var(--risk-high-bg); }
+.risk-severity.medium { color: var(--risk-medium); border-color: var(--risk-medium); background: var(--risk-medium-bg); }
+.risk-severity.low { color: var(--risk-low); border-color: var(--risk-low); background: var(--risk-low-bg); }
+
+.risk-title { font-size: var(--text-subhead); font-weight: 500; line-height: 1.45; }
+
+.risk-toggle {
+  font-family: var(--font-mono);
+  font-size: var(--text-small);
+  color: var(--text-dim);
+  transition: transform 0.2s ease;
+}
+
+.risk-card.expanded .risk-toggle { transform: rotate(90deg); }
+
+.risk-detail-wrapper {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows 0.3s cubic-bezier(0.25, 0, 0.2, 1);
+}
+
+.risk-card.expanded .risk-detail-wrapper {
+  grid-template-rows: 1fr;
+}
+
+.risk-detail { overflow: hidden; padding: 0 1.25rem 0; padding-left: calc(5rem + 2.25rem); transition: padding-bottom 0.3s cubic-bezier(0.25, 0, 0.2, 1); }
+.risk-card.expanded .risk-detail { padding-bottom: 1.5rem; }
+
+.risk-analogy {
+  font-size: var(--text-body);
+  line-height: 1.65;
+  color: var(--text-muted);
+  border-left: 2px solid var(--border);
+  padding-left: 1rem;
+  margin: 0.5rem 0 0.75rem;
+  font-style: italic;
+  max-width: 65ch;
+}
+
+.risk-consequence { font-size: var(--text-body); color: var(--text-muted); line-height: 1.65; margin-bottom: 0.75rem; max-width: 65ch; }
+
+.risk-evidence {
+  font-family: var(--font-mono);
+  font-size: var(--text-small);
+  color: var(--text-dim);
+  background: var(--surface-raised);
+  border: 1px solid var(--border);
+  padding: 0.6rem 0.8rem;
+  margin-top: 0.75rem;
+  line-height: 1.6;
+}
+
+.risk-fix {
+  background: var(--surface-raised);
+  border: 1px solid var(--border);
+  padding: 1rem;
+  margin-top: 1rem;
+}
+
+.risk-fix-title {
+  font-family: var(--font-mono);
+  font-size: var(--mono-size);
+  letter-spacing: var(--mono-tracking);
+  text-transform: uppercase;
+  color: var(--text-dim);
+  margin-bottom: 0.5rem;
+}
+
+.risk-fix-summary { font-size: var(--text-body); font-weight: 600; margin-bottom: 0.35rem; }
+.risk-fix-detail { font-size: var(--text-body); color: var(--text-muted); line-height: 1.65; max-width: 65ch; }
+
+.risk-meta {
+  display: flex;
+  gap: 2rem;
+  margin-top: 1rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--border);
+}
+
+.risk-meta-label {
+  font-family: var(--font-mono);
+  font-size: var(--mono-size);
+  letter-spacing: var(--mono-tracking);
+  text-transform: uppercase;
+  color: var(--text-dim);
+  display: block;
+  margin-bottom: 0.2rem;
+}
+
+.risk-meta-value { color: var(--text-muted); font-size: var(--text-secondary); }
+.risk-learn-more { margin-top: 0.75rem; display: flex; gap: 0.5rem; flex-wrap: wrap; }
+
+.learn-more-link {
+  font-family: var(--font-mono);
+  font-size: var(--mono-size);
+  letter-spacing: 0.05em;
+  color: var(--cat-frontend);
+  text-decoration: none;
+  border: 1px solid var(--border);
+  padding: 0.2rem 0.5rem;
+}
+
+.learn-more-link:hover { border-color: var(--cat-frontend); }
+.learn-more-link:focus-visible { outline: 2px solid var(--highlight); outline-offset: 1px; }
+
+/* ---- FOOTER ---- */
+
+.footer {
+  padding-top: 2rem;
+  border-top: 1px solid var(--border);
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+}
+
+.footer-left { font-family: var(--font-mono); font-size: var(--text-small); color: var(--text-dim); letter-spacing: 0.05em; }
+.footer-right { font-size: var(--text-secondary); color: var(--text-dim); }
+.footer-right a { color: var(--cat-frontend); text-decoration: none; }
+.footer-right a:hover { text-decoration: underline; }
+
+@keyframes slideUp { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+.cat-group { animation: slideUp 0.4s cubic-bezier(0.25, 0, 0.2, 1) both; }
+.comp-card { animation: slideUp 0.35s cubic-bezier(0.25, 0, 0.2, 1) both; }
+.risk-card { animation: slideUp 0.3s cubic-bezier(0.25, 0, 0.2, 1) both; }
+.risk-list .risk-card:nth-child(1) { animation-delay: 0.1s; }
+.risk-list .risk-card:nth-child(2) { animation-delay: 0.15s; }
+.risk-list .risk-card:nth-child(3) { animation-delay: 0.2s; }
+.risk-list .risk-card:nth-child(4) { animation-delay: 0.25s; }
+.risk-list .risk-card:nth-child(5) { animation-delay: 0.3s; }
+.risk-list .risk-card:nth-child(6) { animation-delay: 0.35s; }
+
+@media (max-width: 768px) {
+  .header-inner { flex-direction: column; align-items: flex-start; gap: 0.75rem; }
+  .map-layout { flex-direction: column; }
+  .diagram { padding: 1rem; }
+  .detail-panel { position: static; max-height: none; }
+  .detail-panel.visible { width: 100%; }
+  .diagram-row { flex-direction: column; }
+  .comp-row { flex-direction: column; }
+  .risk-card-header { grid-template-columns: auto 1fr auto; gap: 0.75rem; }
+  .risk-detail { padding-left: 1.25rem; }
+  .footer { flex-direction: column; gap: 0.5rem; }
+}
+
+@media print {
+  .header { position: static; border-bottom: 2px solid var(--text); }
+  .cat-group, .comp-card, .risk-card { animation: none; break-inside: avoid; }
+  .risk-card .risk-detail-wrapper { grid-template-rows: 1fr; }
+  .risk-card .risk-detail { padding-bottom: 1.5rem; }
+  .risk-toggle, .detail-close { display: none; }
+  body { background: white; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cat-group, .comp-card, .risk-card { animation: none; }
+  .conn-tag::before { animation: none; }
+  * { transition-duration: 0.01ms !important; }
+  .risk-detail-wrapper { transition: none; }
+}
+
+@media print {
+  .conn-tag::before { display: none; }
+}
+</style>
+</head>
+<body>
+
+<header class="header">
+  <div class="header-inner">
+    <div class="header-left">
+      <span class="project-name" id="projectName"></span>
+      <span class="project-meta" id="projectMeta"></span>
+    </div>
+    <div class="risk-counts" id="riskCounts"></div>
+  </div>
+</header>
+
+<div class="shell">
+  <div class="summary-strip">
+    <p class="summary-text" id="summaryText"></p>
+    <p class="summary-overview" id="summaryOverview"></p>
+  </div>
+
+  <section class="map-section">
+    <div class="section-label">Architecture Diagram</div>
+    <div class="diagram-hint">
+      <span><span class="hint-key">click</span> a component for details</span>
+      <span><span class="hint-key">hover</span> a connection tag to highlight its target</span>
+      <span><span class="hint-key">click</span> a connection tag to jump to that component</span>
+    </div>
+    <div class="map-layout">
+      <div class="diagram" id="diagram"></div>
+      <div class="detail-panel" id="detailPanel">
+        <div class="detail-panel-header">
+          <div>
+            <span class="detail-category" id="detailCategory"></span>
+            <h2 class="detail-title" id="detailTitle"></h2>
+          </div>
+          <button class="detail-close" onclick="closeDetail()">close</button>
+        </div>
+        <p class="detail-description" id="detailDescription"></p>
+        <div class="detail-columns">
+          <div id="detailFiles"></div>
+          <div id="detailConnections"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="risk-section">
+    <div class="section-label">Risk Report</div>
+    <div class="risk-list" id="riskList"></div>
+  </section>
+
+  <footer class="footer">
+    <div class="footer-left" id="footerTimestamp"></div>
+    <div class="footer-right">
+      Generated by <a href="https://systemdesignschool.com" target="_blank" rel="noopener">System Design for Builders</a>
+    </div>
+  </footer>
+</div>
+
+<script id="architectureData" type="application/json">
+<!-- ARCHITECTURE_DATA -->
+      ]
+    },
+    {
+      "id": "meta-agent",
+      "category": "background-jobs",
+      "label": "Meta-Agent (Self-Improver)",
+      "description": "An AI agent whose job is to improve other AI agents. It reads the current code, thinks about what could work better, and writes patches (code changes). It is the 'researcher' that proposes experiments.",
+      "files": [
+        "meta_agent.py",
+        "run_meta_agent.py"
+      ],
+      "connections": [
+        {
+          "targetId": "llm-interface",
+          "label": "calls LLM APIs to think and generate code"
+        },
+        {
+          "targetId": "archive-store",
+          "label": "reads past attempts and scores"
+        }
+      ]
+    },
+    {
+      "id": "task-agent",
+      "category": "background-jobs",
+      "label": "Task Agent (Problem Solver)",
+      "description": "An AI agent that actually solves problems: writing code, playing games, reviewing papers, proving math theorems. Each 'generation' of the task agent is a different version that the meta-agent created.",
+      "files": [
+        "task_agent.py",
+        "run_task_agent.py",
+        "agent/base_agent.py"
+      ],
+      "connections": [
+        {
+          "targetId": "llm-interface",
+          "label": "calls LLM APIs to reason and act"
+        },
+        {
+          "targetId": "docker-runtime",
+          "label": "executes generated code safely"
+        }
+      ]
+    },
+    {
+      "id": "llm-interface",
+      "category": "external-services",
+      "label": "LLM API Interface (litellm)",
+      "description": "A unified wrapper that lets the system talk to multiple AI providers (OpenAI, Anthropic, Google) through one interface. Handles retries, timeouts, and switching between models like GPT-4o, Claude, and Gemini.",
+      "files": [
+        "agent/llm.py",
+        "agent/llm_withtools.py",
+        "agent/tools/bash.py",
+        "agent/tools/edit.py"
+      ],
+      "connections": [
+        {
+          "targetId": "external-llm-providers",
+          "label": "sends prompts, receives completions"
+        }
+      ]
+    },
+    {
+      "id": "external-llm-providers",
+      "category": "external-services",
+      "label": "External LLM Providers",
+      "description": "The actual AI services the system depends on: OpenAI (GPT-4o, GPT-5), Anthropic (Claude), and Google (Gemini). API keys stored in a .env file. These are the 'contractors' the system hires to do the thinking.",
+      "files": [
+        ".env"
+      ],
+      "connections": []
+    },
+    {
+      "id": "docker-runtime",
+      "category": "storage",
+      "label": "Docker Execution Environment",
+      "description": "Isolated containers where AI-generated code runs safely. Built on NVIDIA CUDA for GPU access. Each evaluation spins up a container, runs the code inside, and captures the results. This is the 'lab' where experiments happen.",
+      "files": [
+        "utils/docker_utils.py",
+        "Dockerfile",
+        "setup_initial.sh"
+      ],
+      "connections": [
+        {
+          "targetId": "domain-evaluators",
+          "label": "hosts evaluation runs"
+        }
+      ]
+    },
+    {
+      "id": "domain-evaluators",
+      "category": "background-jobs",
+      "label": "Domain Evaluators",
+      "description": "Specialized test suites for different problem types: game-playing (BALROG), robotics (Genesis), math (IMO), code generation (Polyglot/SWE-bench), paper review, and search. Each domain scores how well a task agent performed.",
+      "files": [
+        "domains/harness.py",
+        "domains/balrog/evaluator.py",
+        "domains/genesis/",
+        "domains/imo/",
+        "domains/polyglot/",
+        "domains/run_eval.py"
+      ],
+      "connections": [
+        {
+          "targetId": "archive-store",
+          "label": "writes evaluation scores"
+        }
+      ]
+    },
+    {
+      "id": "archive-store",
+      "category": "database",
+      "label": "Archive (File-Based State Store)",
+      "description": "The system's memory. An append-only JSONL file that records every generation attempt: what was tried, what code was written, and how well it scored. Also stores metadata, diffs, and evaluation reports as files on disk.",
+      "files": [
+        "utils/gl_utils.py",
+        "archive.jsonl",
+        "gen_*/metadata.json"
+      ],
+      "connections": []
+    }
+  ],
+  "risks": [
+    {
+      "patternId": "untrusted-code-execution",
+      "severity": "critical",
+      "adjustedSeverity": "critical",
+      "affectedComponents": [
+        "docker-runtime",
+        "task-agent",
+        "meta-agent"
+      ],
+      "evidence": "agent/tools/bash.py executes arbitrary commands via asyncio.subprocess. agent/tools/edit.py writes to arbitrary file paths. generate_loop.py applies git patches from LLM output. Docker containers run with NVIDIA GPU access and no visible resource limits (memory, CPU, disk).",
+      "explanation": {
+        "plain": "This system is designed to execute code written by AI models. The AI writes code, and the system runs it. While Docker containers provide some isolation, there are no visible resource limits (memory, CPU, disk) on those containers, and the bash tool can run arbitrary commands.",
+        "analogy": "Imagine hiring a stranger to cook in your kitchen, but giving them the keys to your whole house and not checking what they put in the food. Docker is like saying 'at least they are cooking in a separate kitchen,' but without locks on the pantry or limits on the gas stove, a mistake (or malicious recipe) could still cause a fire.",
+        "consequence": "A misbehaving AI-generated script could consume all available GPU memory, fill the disk, make network calls to external services, or interfere with other processes on the host. In a research setting this risk is accepted, but it means the system cannot be safely exposed to untrusted users."
+      },
+      "fix": {
+        "summary": "Add Docker resource limits and network restrictions",
+        "detail": "Set --memory, --cpus, and --storage-opt limits on container creation in docker_utils.py. Use --network=none for containers that do not need external access. Add a timeout kill switch that forcefully removes containers after a maximum wall-clock time."
+      },
+      "learnMore": {
+        "glossaryTerms": [],
+        "buildStory": null
+      }
+    },
+    {
+      "patternId": "single-file-state-store",
+      "severity": "high",
+      "adjustedSeverity": "high",
+      "affectedComponents": [
+        "archive-store",
+        "generation-loop"
+      ],
+      "evidence": "utils/gl_utils.py appends to archive.jsonl with no file locking, no transactions, and no backup mechanism. The entire evolutionary history lives in one file. Metadata per generation stored as individual JSON files with no atomic write guarantees.",
+      "explanation": {
+        "plain": "The entire history of every experiment the system has ever run lives in a single file called archive.jsonl. There is no backup, no redundancy, and no protection against the file being corrupted by a crash or concurrent write.",
+        "analogy": "It is like keeping your company's entire accounting history in one notebook. If someone spills coffee on it, or two people try to write in it at the same time, you could lose months of records. A real accounting system keeps copies, has transaction logs, and never lets two people edit the same entry simultaneously.",
+        "consequence": "If the process crashes mid-write, archive.jsonl could be corrupted, losing the record of all past generations. If two processes try to write simultaneously (e.g., during parallel evaluation), data could be interleaved and unreadable. A single disk failure means total loss of experiment history."
+      },
+      "fix": {
+        "summary": "Add atomic writes, file locking, and periodic backups",
+        "detail": "Write to a temporary file first, then atomically rename it (write-then-rename pattern). Add file locking (fcntl.flock) before writes. Create periodic snapshots or use SQLite instead of raw JSONL for structured state that needs transaction safety."
+      },
+      "learnMore": {
+        "glossaryTerms": [
+          "database",
+          "persistence"
+        ],
+        "buildStory": null
+      }
+    },
+    {
+      "patternId": "secrets-in-source",
+      "severity": "high",
+      "adjustedSeverity": "high",
+      "affectedComponents": [
+        "external-llm-providers",
+        "llm-interface"
+      ],
+      "evidence": "API keys loaded via dotenv.load_dotenv() in agent/llm.py and baselines/sft_openai/run.py. The .env file pattern is used but there is no .env.example documenting required variables, and .gitignore may not cover all secret files. The fine-tuning baseline sends actual training data to OpenAI's API.",
+      "explanation": {
+        "plain": "Your API keys for OpenAI, Anthropic, and Google are stored in a .env file. While .env is better than hardcoding, there is no documentation of what keys are needed, and the fine-tuning code sends training data directly to OpenAI's servers.",
+        "analogy": "It is like keeping your building's master key in an unlabeled envelope on your desk instead of written on a Post-it on the door. Better, but still easy to accidentally share, and anyone who gets the envelope has full access to everything.",
+        "consequence": "If the .env file is accidentally committed or shared, all API keys are exposed. There is no audit trail of API usage, no key rotation, and the fine-tuning workflow uploads potentially sensitive research data to external providers."
+      },
+      "fix": {
+        "summary": "Add .env.example, verify .gitignore, and document API key requirements",
+        "detail": "Create a .env.example listing all required variables without values. Verify .env is in .gitignore. Consider using a secrets manager for team use. For the fine-tuning baseline, document what data is sent to OpenAI and ensure it is appropriate."
+      },
+      "learnMore": {
+        "glossaryTerms": [],
+        "buildStory": null
+      }
+    },
+    {
+      "patternId": "monolith-no-boundaries",
+      "severity": "medium",
+      "adjustedSeverity": "medium",
+      "affectedComponents": [
+        "generation-loop"
+      ],
+      "evidence": "generate_loop.py is 2,800+ lines containing orchestration logic, container management, evaluation triggers, selection strategies, file I/O, and reporting all in one file. Functions reach across domains, utils, and agent modules freely.",
+      "explanation": {
+        "plain": "The main orchestration file is nearly 3,000 lines long and handles everything: managing experiments, running containers, evaluating results, picking what to try next, and writing reports. Changing one part risks breaking another.",
+        "analogy": "It is like a restaurant where the head chef also takes orders, buses tables, manages inventory, does the books, and fixes the plumbing. They know how everything works, but if they get sick, nobody else can step in because all the knowledge is in one person's head. And if they change the recipe, they might accidentally break the inventory system.",
+        "consequence": "New researchers will struggle to understand and modify the system. Debugging is harder because side effects can cascade across unrelated logic. Testing individual components is difficult when everything is intertwined."
+      },
+      "fix": {
+        "summary": "Extract orchestration concerns into focused modules",
+        "detail": "Split generate_loop.py into focused modules: a selection module (picking parents), an evaluation coordinator, a container lifecycle manager, and a reporting module. Each module should have a clear interface. The main loop becomes a thin coordinator that calls these modules."
+      },
+      "learnMore": {
+        "glossaryTerms": [
+          "monolith"
+        ],
+        "buildStory": {
+          "slug": "ride-sharing",
+          "stageId": "stage-5"
+        }
+      }
+    },
+    {
+      "patternId": "no-error-boundary",
+      "severity": "medium",
+      "adjustedSeverity": "medium",
+      "affectedComponents": [
+        "generation-loop",
+        "domain-evaluators"
+      ],
+      "evidence": "727 try/except blocks across the codebase. Many catch broad exceptions and continue silently. No centralized error monitoring or alerting. Errors logged to per-thread rotating files with no aggregation. Container failures may lose in-memory state.",
+      "explanation": {
+        "plain": "The system has hundreds of try/except blocks that catch errors and keep going. While this prevents crashes, it means errors can happen silently. There is no central place to see what went wrong, and no alerting when experiments fail in unexpected ways.",
+        "analogy": "It is like a factory where every machine has a 'mute' button on its alarm. When something goes wrong, the machine keeps running in a degraded state instead of stopping. The factory floor looks fine from the control room, but individual machines might be producing defective output that nobody notices until the end of the day.",
+        "consequence": "Failed experiments might be silently skipped or produce corrupt results that propagate to future generations. Debugging requires reading through individual log files per thread. Systematic issues (like an API provider being down) are hard to detect quickly."
+      },
+      "fix": {
+        "summary": "Add a centralized error summary and distinguish recoverable from critical errors",
+        "detail": "Create an error aggregation module that collects all exceptions into a summary report after each generation loop. Classify errors as recoverable (retry) vs. critical (stop the loop). Log error counts and types to a single summary file that researchers can check at a glance."
+      },
+      "learnMore": {
+        "glossaryTerms": [
+          "graceful-degradation",
+          "monitoring"
+        ],
+        "buildStory": null
+      }
+    },
+    {
+      "patternId": "no-health-check",
+      "severity": "low",
+      "adjustedSeverity": "low",
+      "affectedComponents": [
+        "docker-runtime",
+        "generation-loop"
+      ],
+      "evidence": "No health check endpoint or monitoring dashboard. Long-running experiments (hours to days) have no external visibility into progress. Container status checked only via Docker API calls during execution. No heartbeat or progress reporting mechanism.",
+      "explanation": {
+        "plain": "When this system runs a long experiment (which can take hours or days), there is no easy way to check on it from the outside. You have to SSH into the machine and read log files to know if things are working.",
+        "analogy": "It is like sending a submarine on a mission with no radio. The submarine might be doing great, or it might be stuck on the ocean floor. You will not know until it either surfaces with results or fails to come back on time.",
+        "consequence": "Researchers cannot monitor experiment progress without manually checking logs. Failed runs may consume resources for hours before anyone notices. There is no way to get a quick status update without reading raw output files."
+      },
+      "fix": {
+        "summary": "Add a simple progress reporting mechanism",
+        "detail": "Write a periodic status file (e.g., status.json) that records: current generation, last evaluation score, elapsed time, and any errors. A simple watcher script or even a tail -f on this file gives researchers visibility into long-running experiments."
+      },
+      "learnMore": {
+        "glossaryTerms": [
+          "health-check",
+          "monitoring"
+        ],
+        "buildStory": {
+          "slug": "ride-sharing",
+          "stageId": "stage-3"
+        }
+      }
+    }
+  ]
+}
+</script>
+
+<script>
+(function() {
+  'use strict';
+
+  var dataEl = document.getElementById('architectureData');
+  var data;
+  try { data = JSON.parse(dataEl.textContent); }
+  catch(e) {
+    document.body.innerHTML = '<div style="padding:3rem;font-family:system-ui"><h1>No architecture data found</h1></div>';
+    return;
+  }
+
+  var meta = data.metadata;
+  var components = data.components || [];
+  var risks = data.risks || [];
+
+  var componentRiskMap = {};
+  var severityOrder = { critical: 0, high: 1, medium: 2, low: 3 };
+  risks.forEach(function(r) {
+    var sev = r.adjustedSeverity || r.severity;
+    (r.affectedComponents || []).forEach(function(cid) {
+      if (!componentRiskMap[cid] || severityOrder[sev] < severityOrder[componentRiskMap[cid]])
+        componentRiskMap[cid] = sev;
+    });
+  });
+
+  var compMap = {};
+  var compLabelMap = {};
+  components.forEach(function(c) { compMap[c.id] = c; compLabelMap[c.id] = c.label; });
+
+  // Category icon map (inline SVGs, stroke-based Lucide icons)
+  var catIcons = {
+    'frontend': '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"><rect width="20" height="14" x="2" y="3" rx="2"/><path d="M8 21h8m-4-4v4"/></svg>',
+    'api-layer': '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"><circle cx="6" cy="19" r="3"/><path d="M9 19h8.5a3.5 3.5 0 0 0 0-7h-11a3.5 3.5 0 0 1 0-7H15"/><circle cx="18" cy="5" r="3"/></svg>',
+    'database': '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5v14a9 3 0 0 0 18 0V5"/><path d="M3 12a9 3 0 0 0 18 0"/></svg>',
+    'cache': '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"><path d="M4 14a1 1 0 0 1-.78-1.63l9.9-10.2a.5.5 0 0 1 .86.46l-1.92 6.02A1 1 0 0 0 13 10h7a1 1 0 0 1 .78 1.63l-9.9 10.2a.5.5 0 0 1-.86-.46l1.92-6.02A1 1 0 0 0 11 14z"/></svg>',
+    'auth': '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/><path d="m9 12l2 2l4-4"/></svg>',
+    'external-services': '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"><path d="M12 22v-5m3-9V2m2 6a1 1 0 0 1 1 1v4a4 4 0 0 1-4 4h-4a4 4 0 0 1-4-4V9a1 1 0 0 1 1-1zM9 8V2"/></svg>',
+    'background-jobs': '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"><rect width="8" height="8" x="3" y="3" rx="2"/><path d="M7 11v4a2 2 0 0 0 2 2h4"/><rect width="8" height="8" x="13" y="13" rx="2"/></svg>',
+    'storage': '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"><path d="M10 16h.01m-7.798-4.423a2 2 0 0 0-.212.896V18a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-5.527a2 2 0 0 0-.212-.896L18.55 5.11A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11zm19.734.436H2.054M6 16h.01"/></svg>'
+  };
+
+  // Category color map
+  var catColors = {
+    'frontend': 'var(--cat-frontend)',
+    'api-layer': 'var(--cat-api)',
+    'database': 'var(--cat-database)',
+    'cache': 'var(--cat-cache)',
+    'auth': 'var(--cat-auth)',
+    'external-services': 'var(--cat-external)',
+    'background-jobs': 'var(--cat-jobs)',
+    'storage': 'var(--cat-storage)'
+  };
+
+  // ---- HEADER ----
+  document.getElementById('projectName').textContent = meta.projectName || 'Project';
+  document.getElementById('projectMeta').textContent =
+    (meta.framework || '') + (meta.language ? ' / ' + meta.language : '') +
+    ' / ' + (meta.scaleAssessment || 'unknown') + ' scale';
+
+  var countsEl = document.getElementById('riskCounts');
+  var rc = meta.riskCount || {};
+  ['critical','high','medium','low'].forEach(function(sev) {
+    var count = rc[sev] || 0;
+    if (!count) return;
+    var chip = document.createElement('span');
+    chip.className = 'risk-chip';
+    chip.setAttribute('data-severity', sev);
+    chip.setAttribute('tabindex', '0');
+    chip.setAttribute('role', 'button');
+    chip.innerHTML = '<span class="count">' + count + '</span> ' + sev;
+    function scrollToSeverity(severity) {
+      var target = riskListEl.querySelector('.risk-card[data-severity="' + severity + '"]');
+      if (target) {
+        target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        target.classList.add('expanded');
+      }
+    }
+    chip.addEventListener('click', scrollToSeverity.bind(null, sev));
+    chip.addEventListener('keydown', function(e) {
+      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); scrollToSeverity(sev); }
+    });
+    countsEl.appendChild(chip);
+  });
+
+  // ---- SUMMARY ----
+  var total = (rc.critical||0)+(rc.high||0)+(rc.medium||0)+(rc.low||0);
+  var s = '<strong>' + esc(meta.projectName||'This project') + '</strong>';
+  s += ' is a ' + esc(meta.framework||'web') + ' application';
+  s += ' with <strong>' + components.length + ' components</strong>';
+  if (total > 0) {
+    s += ' and <strong>' + total + ' identified risk' + (total!==1?'s':'') + '</strong>';
+    if (rc.critical > 0) s += ', including ' + rc.critical + ' critical';
+  } else {
+    s += ' and no significant risks identified at its current scale';
+  }
+  s += '.';
+  document.getElementById('summaryText').innerHTML = s;
+
+  // Architecture overview (2-4 sentence plain-English summary)
+  if (meta.summary) {
+    document.getElementById('summaryOverview').textContent = meta.summary;
+  }
+
+  // ============================================
+  // CONTAINMENT-BASED ARCHITECTURE DIAGRAM
+  // ============================================
+
+  // Group components by category
+  var catGroups = {};
+  var catOrder = ['frontend', 'api-layer', 'auth', 'background-jobs', 'external-services', 'cache', 'storage', 'database'];
+  components.forEach(function(c) {
+    if (!catGroups[c.category]) catGroups[c.category] = [];
+    catGroups[c.category].push(c);
+  });
+
+  // Determine layout tiers based on connection depth
+  var inDegree = {};
+  components.forEach(function(c) {
+    if (!(c.id in inDegree)) inDegree[c.id] = 0;
+    (c.connections||[]).forEach(function(conn) {
+      inDegree[conn.targetId] = (inDegree[conn.targetId]||0) + 1;
+    });
+  });
+
+  // Assign categories to tiers based on their components' average depth
+  var layerOf = {};
+  var visited = {};
+
+  function assignLayer(id, depth) {
+    if (visited[id] && layerOf[id] >= depth) return;
+    visited[id] = true;
+    layerOf[id] = Math.max(layerOf[id] || 0, depth);
+    (compMap[id] && compMap[id].connections || []).forEach(function(conn) {
+      assignLayer(conn.targetId, depth + 1);
+    });
+  }
+
+  components.forEach(function(c) {
+    if ((inDegree[c.id]||0) === 0) assignLayer(c.id, 0);
+  });
+  components.forEach(function(c) { if (!visited[c.id]) layerOf[c.id] = 0; });
+
+  // Compute average layer per category
+  var catAvgLayer = {};
+  Object.keys(catGroups).forEach(function(cat) {
+    var sum = 0;
+    catGroups[cat].forEach(function(c) { sum += (layerOf[c.id]||0); });
+    catAvgLayer[cat] = sum / catGroups[cat].length;
+  });
+
+  // Sort categories by average layer depth
+  var sortedCats = Object.keys(catGroups).sort(function(a, b) {
+    return catAvgLayer[a] - catAvgLayer[b];
+  });
+
+  // Build rows of category groups (pair categories into rows of 2)
+  var diagramEl = document.getElementById('diagram');
+  var animDelay = 0;
+
+  // Render category groups in tier rows
+
+  for (var i = 0; i < sortedCats.length; i += 2) {
+    var rowCats = [sortedCats[i]];
+    if (i + 1 < sortedCats.length) rowCats.push(sortedCats[i + 1]);
+
+    var row = document.createElement('div');
+    row.className = 'diagram-row';
+
+    rowCats.forEach(function(cat) {
+      var group = document.createElement('div');
+      group.className = 'cat-group';
+      group.style.animationDelay = (animDelay * 0.08) + 's';
+      animDelay++;
+
+      var color = catColors[cat] || 'var(--diagram-label)';
+      var label = document.createElement('span');
+      label.className = 'cat-group-label';
+      label.textContent = cat.replace(/-/g, ' ');
+      label.style.color = color;
+      group.appendChild(label);
+
+      var comps = catGroups[cat];
+
+      // If 2 or fewer components, put them side by side
+      if (comps.length === 2) {
+        var compRow = document.createElement('div');
+        compRow.className = 'comp-row';
+        comps.forEach(function(c) {
+          compRow.appendChild(makeCompCard(c));
+        });
+        group.appendChild(compRow);
+      } else {
+        comps.forEach(function(c) {
+          group.appendChild(makeCompCard(c));
+        });
+      }
+
+      row.appendChild(group);
+    });
+
+    // If only one cat in this row, center it instead of stretching
+    if (rowCats.length === 1) {
+      row.style.justifyContent = 'center';
+      row.querySelector('.cat-group').style.flex = 'none';
+      row.querySelector('.cat-group').style.width = '60%';
+      var spacer = document.createElement('div');
+      spacer.style.display = 'none';
+      row.appendChild(spacer);
+    }
+
+    diagramEl.appendChild(row);
+  }
+
+  // Stagger comp-card entrance animations
+  var allCompCards = diagramEl.querySelectorAll('.comp-card');
+  allCompCards.forEach(function(c, i) {
+    c.style.animationDelay = (0.1 + i * 0.06) + 's';
+  });
+
+  function makeCompCard(comp) {
+    var card = document.createElement('div');
+    card.className = 'comp-card';
+    card.setAttribute('data-id', comp.id);
+    card.style.setProperty('--cat-color', catColors[comp.category] || 'var(--diagram-label)');
+
+    var riskSev = componentRiskMap[comp.id];
+    if (riskSev) card.classList.add('risk-' + riskSev);
+
+    var mainLabel = comp.label.split('(')[0].trim();
+    var paren = comp.label.match(/\(([^)]+)\)/);
+
+    var iconSvg = catIcons[comp.category] || '';
+    var iconHtml = iconSvg ? '<span class="comp-icon" style="color:' + (catColors[comp.category] || 'var(--diagram-label)') + '">' + iconSvg + '</span>' : '';
+
+    var h = '<div class="comp-top">' + iconHtml + '<div class="comp-label">' + esc(mainLabel) + '</div></div>';
+    if (paren) h += '<div class="comp-sublabel">' + esc(paren[1]) + '</div>';
+
+    // Connection tags
+    var conns = comp.connections || [];
+    if (conns.length > 0) {
+      h += '<div class="comp-connections">';
+      conns.forEach(function(conn) {
+        var target = compMap[conn.targetId];
+        var targetName = target ? target.label.split('(')[0].trim() : conn.targetId;
+        h += '<span class="conn-tag" tabindex="0" data-target="' + esc(conn.targetId) + '">'
+          + '<span class="conn-arrow">\u2192</span>'
+          + '<span class="conn-target">' + esc(targetName) + '</span> '
+          + esc(conn.label)
+          + '</span>';
+      });
+      h += '</div>';
+    }
+
+    card.innerHTML = h;
+    card.setAttribute('tabindex', '0');
+    card.addEventListener('click', function(e) {
+      e.stopPropagation();
+      selectComponent(comp);
+    });
+    card.addEventListener('keydown', function(e) {
+      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); e.stopPropagation(); selectComponent(comp); }
+    });
+
+    // Connection tag hover: highlight target card
+    card.querySelectorAll('.conn-tag').forEach(function(tag) {
+      var targetId = tag.getAttribute('data-target');
+      tag.addEventListener('mouseenter', function() {
+        var targetCard = diagramEl.querySelector('[data-id="' + targetId + '"]');
+        if (targetCard) targetCard.classList.add('conn-highlight');
+      });
+      tag.addEventListener('mouseleave', function() {
+        var targetCard = diagramEl.querySelector('[data-id="' + targetId + '"]');
+        if (targetCard) targetCard.classList.remove('conn-highlight');
+      });
+      function jumpToTarget(e) {
+        e.stopPropagation();
+        var target = compMap[targetId];
+        if (target) {
+          selectComponent(target);
+          var targetCard = diagramEl.querySelector('[data-id="' + targetId + '"]');
+          if (targetCard) targetCard.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+      }
+      tag.addEventListener('click', jumpToTarget);
+      tag.addEventListener('keydown', function(e) {
+        if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); jumpToTarget(e); }
+      });
+    });
+
+    return card;
+  }
+
+  // ---- DETAIL PANEL ----
+  var detailPanel = document.getElementById('detailPanel');
+  var selectedCard = null;
+
+  function selectComponent(comp) {
+    if (selectedCard) selectedCard.classList.remove('selected');
+    var card = diagramEl.querySelector('[data-id="' + comp.id + '"]');
+
+    if (selectedCard === card) { closeDetail(); return; }
+    selectedCard = card;
+    card.classList.add('selected');
+
+    var catEl = document.getElementById('detailCategory');
+    catEl.textContent = comp.category.replace(/-/g, ' ');
+    catEl.style.background = catColors[comp.category] || '#666';
+
+    document.getElementById('detailTitle').textContent = comp.label;
+    document.getElementById('detailDescription').textContent = comp.description;
+
+    var filesEl = document.getElementById('detailFiles');
+    if (comp.files && comp.files.length) {
+      filesEl.innerHTML = '<div class="detail-col-title">Key Files</div>' +
+        comp.files.map(function(f) { return '<div class="detail-file">' + esc(f) + '</div>'; }).join('');
+    } else { filesEl.innerHTML = ''; }
+
+    var connsEl = document.getElementById('detailConnections');
+    if (comp.connections && comp.connections.length) {
+      connsEl.innerHTML = '<div class="detail-col-title">Connects To</div>' +
+        comp.connections.map(function(c) {
+          return '<div class="detail-connection"><span class="detail-connection-target">' + esc(compLabelMap[c.targetId]||c.targetId) + '</span> &mdash; ' + esc(c.label) + '</div>';
+        }).join('');
+    } else { connsEl.innerHTML = ''; }
+
+    detailPanel.classList.add('visible');
+  }
+
+  window.closeDetail = function() {
+    if (selectedCard) selectedCard.classList.remove('selected');
+    selectedCard = null;
+    detailPanel.classList.remove('visible');
+  };
+
+  document.addEventListener('click', function(e) {
+    if (selectedCard && !e.target.closest('.comp-card') && !e.target.closest('.detail-panel')) closeDetail();
+  });
+
+  // ---- RISK REPORT ----
+  var riskListEl = document.getElementById('riskList');
+  risks.slice().sort(function(a,b) {
+    return (severityOrder[a.adjustedSeverity||a.severity]||99) - (severityOrder[b.adjustedSeverity||b.severity]||99);
+  }).forEach(function(risk) {
+    var sev = risk.adjustedSeverity || risk.severity;
+    var card = document.createElement('div');
+    card.className = 'risk-card';
+    card.setAttribute('data-severity', sev);
+
+    var h = '<div class="risk-card-header">';
+    h += '<span class="risk-severity ' + esc(sev) + '">' + esc(sev) + '</span>';
+    h += '<span class="risk-title">' + esc(risk.explanation.plain) + '</span>';
+    h += '<span class="risk-toggle">&#9654;</span></div>';
+
+    var d = '<div class="risk-detail">';
+    d += '<div class="risk-analogy">' + esc(risk.explanation.analogy) + '</div>';
+    d += '<p class="risk-consequence">' + esc(risk.explanation.consequence) + '</p>';
+    if (risk.evidence) d += '<div class="risk-evidence">' + esc(risk.evidence) + '</div>';
+    if (risk.fix) {
+      d += '<div class="risk-fix"><div class="risk-fix-title">Recommended Fix</div>';
+      d += '<div class="risk-fix-summary">' + esc(risk.fix.summary) + '</div>';
+      d += '<div class="risk-fix-detail">' + esc(risk.fix.detail) + '</div></div>';
+    }
+    d += '<div class="risk-meta">';
+    if (risk.affectedComponents && risk.affectedComponents.length) {
+      d += '<div><span class="risk-meta-label">Affected</span>';
+      d += '<span class="risk-meta-value">' + risk.affectedComponents.map(function(id) { return esc(compLabelMap[id]||id); }).join(', ') + '</span></div>';
+    }
+    d += '</div>';
+    if (risk.learnMore) {
+      var links = [];
+      (risk.learnMore.glossaryTerms||[]).forEach(function(t) {
+        links.push('<a class="learn-more-link" href="https://systemdesignschool.com/glossary#' + esc(t) + '" target="_blank" rel="noopener">' + esc(t.replace(/-/g,' ')) + '</a>');
+      });
+      if (risk.learnMore.buildStory && risk.learnMore.buildStory.slug)
+        links.push('<a class="learn-more-link" href="https://systemdesignschool.com/stories/' + esc(risk.learnMore.buildStory.slug) + '" target="_blank" rel="noopener">Build Story: ' + esc(risk.learnMore.buildStory.slug.replace(/-/g,' ')) + '</a>');
+      if (links.length) d += '<div class="risk-learn-more">' + links.join('') + '</div>';
+    }
+    d += '</div>';
+
+    card.innerHTML = h + '<div class="risk-detail-wrapper">' + d + '</div>';
+    card.setAttribute('tabindex', '0');
+    card.querySelector('.risk-card-header').addEventListener('click', function() { card.classList.toggle('expanded'); });
+    card.addEventListener('keydown', function(e) {
+      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); card.classList.toggle('expanded'); }
+    });
+    riskListEl.appendChild(card);
+  });
+
+  // ---- FOOTER ----
+  var ts = meta.scannedAt ? new Date(meta.scannedAt).toLocaleDateString('en-US', { year:'numeric', month:'long', day:'numeric', hour:'2-digit', minute:'2-digit' }) : '';
+  document.getElementById('footerTimestamp').textContent = 'Scanned ' + ts;
+
+  function esc(str) {
+    if (!str) return '';
+    var d = document.createElement('div');
+    d.textContent = str;
+    return d.innerHTML;
+  }
+})();
+</script>
+</body>
+</html>

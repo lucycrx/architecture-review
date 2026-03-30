@@ -1,0 +1,154 @@
+{
+  "categories": [
+    {
+      "id": "frontend",
+      "label": "Frontend",
+      "description": "What users see and interact with — the screens, buttons, and forms that make up the user interface",
+      "analogy": "The storefront and customer-facing counters of a business. Everything the customer touches and sees.",
+      "icon": "lucide:monitor",
+      "diagramNodeType": "client",
+      "color": "#4A708E",
+      "signals": [
+        "app/ or pages/ directory with page components",
+        "React, Vue, Svelte, or Angular components",
+        "Static HTML files",
+        "CSS, Tailwind, or styling configuration",
+        "Client-side routing setup",
+        "Browser-specific APIs (localStorage, fetch from client)"
+      ]
+    },
+    {
+      "id": "api-layer",
+      "label": "API Layer",
+      "description": "The gateway that receives all incoming requests and routes them to the right place — the front desk of your application",
+      "analogy": "The front desk at a hotel. Every guest request goes through the front desk, which figures out whether to call housekeeping, the restaurant, or the valet.",
+      "icon": "lucide:route",
+      "diagramNodeType": "api-gateway",
+      "color": "#4E5E6E",
+      "signals": [
+        "API route files (app/api/, routes/, controllers/)",
+        "Express/Fastify/Hono router setup",
+        "Django views or viewsets",
+        "Rails controllers",
+        "FastAPI/Flask route decorators",
+        "GraphQL schema and resolvers",
+        "tRPC routers",
+        "Middleware configuration"
+      ]
+    },
+    {
+      "id": "database",
+      "label": "Database",
+      "description": "Where your data lives permanently — the system of record that remembers everything even after restarts",
+      "analogy": "The filing cabinet that stores all your important records. Slower to access than your desk, but nothing gets lost.",
+      "icon": "lucide:database",
+      "diagramNodeType": "database",
+      "color": "#256B3B",
+      "signals": [
+        "Prisma schema or migrations",
+        "SQLAlchemy models",
+        "ActiveRecord models and migrations",
+        "Drizzle schema",
+        "Sequelize models",
+        "Django models",
+        "Raw SQL files",
+        "Database connection configuration",
+        "Supabase client setup",
+        "MongoDB/Mongoose schemas",
+        "Firebase/Firestore configuration"
+      ]
+    },
+    {
+      "id": "cache",
+      "label": "Cache",
+      "description": "A fast, temporary storage layer that keeps frequently accessed data close at hand to avoid slow database lookups",
+      "analogy": "A cookbook on the kitchen counter instead of in the bookshelf. Limited space, but anything there is instant to grab.",
+      "icon": "lucide:zap",
+      "diagramNodeType": "cache",
+      "color": "#C49A1D",
+      "signals": [
+        "Redis client or configuration",
+        "Memcached setup",
+        "In-memory caching (node-cache, lru-cache)",
+        "Cache middleware or decorators",
+        "Cache-Control headers",
+        "Next.js ISR or revalidation config",
+        "CDN cache configuration"
+      ]
+    },
+    {
+      "id": "auth",
+      "label": "Authentication and Authorization",
+      "description": "How the system verifies who you are and what you're allowed to do",
+      "analogy": "The security guard at the building entrance who checks your ID badge and makes sure you only go to floors you have access to.",
+      "icon": "lucide:shield-check",
+      "diagramNodeType": "server",
+      "color": "#8C3B3B",
+      "signals": [
+        "NextAuth / Auth.js configuration",
+        "Passport.js strategies",
+        "JWT token handling",
+        "OAuth provider setup",
+        "Session management middleware",
+        "Supabase Auth",
+        "Firebase Auth",
+        "Clerk, Auth0, or other auth service SDK",
+        "Role/permission checks in middleware or routes",
+        "RBAC or ACL configuration"
+      ]
+    },
+    {
+      "id": "external-services",
+      "label": "External Services",
+      "description": "Third-party services your system depends on — payment processors, email providers, AI APIs, analytics, etc.",
+      "analogy": "Suppliers and contractors your business relies on. You don't make everything in-house — you outsource to specialists.",
+      "icon": "lucide:plug",
+      "diagramNodeType": "server",
+      "color": "#C44536",
+      "signals": [
+        "API keys in environment variables",
+        "HTTP client calls to external URLs",
+        "Third-party SDK imports (Stripe, SendGrid, Twilio, OpenAI, etc.)",
+        "Webhook handler endpoints",
+        "External API wrapper functions",
+        "Service client configuration files"
+      ]
+    },
+    {
+      "id": "background-jobs",
+      "label": "Background Jobs",
+      "description": "Tasks that run behind the scenes without making the user wait — sending emails, processing images, syncing data",
+      "analogy": "The back office that handles paperwork after the customer leaves. The customer doesn't wait while their receipt is filed and their loyalty points are updated.",
+      "icon": "lucide:workflow",
+      "diagramNodeType": "queue",
+      "color": "#6B5B8A",
+      "signals": [
+        "Bull, BullMQ, or Bee-Queue configuration",
+        "Sidekiq or Resque setup (Rails)",
+        "Celery configuration (Python)",
+        "Cron job definitions",
+        "Worker files or processes",
+        "Job/task queue setup",
+        "Background function handlers (Vercel cron, Inngest, Trigger.dev)"
+      ]
+    },
+    {
+      "id": "storage",
+      "label": "File Storage",
+      "description": "Where files, images, documents, and uploads are kept — separate from the database",
+      "analogy": "The warehouse where you store physical inventory. Different from the office filing cabinet (database) — this is for bulky items.",
+      "icon": "lucide:hard-drive",
+      "diagramNodeType": "server",
+      "color": "#5A7A5A",
+      "signals": [
+        "S3 or cloud storage client configuration",
+        "File upload handlers (multer, busboy, formidable)",
+        "Cloudinary, Uploadthing, or image service SDK",
+        "Static file serving configuration",
+        "Supabase Storage setup",
+        "Firebase Storage setup",
+        "Local file system write operations for user content"
+      ]
+    }
+  ]
+}

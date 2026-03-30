@@ -1,0 +1,13 @@
+{
+  "name": "architecture-review",
+  "description": "Scan any codebase and generate an interactive HTML architecture diagram with plain-English explanations and risk analysis. Built for PMs, founders, and vibecoders.",
+  "version": "1.0.0",
+  "author": {
+    "name": "Lucy Chen"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/lucychen/architecture-review-plugin"
+  },
+  "license": "MIT"
+}
