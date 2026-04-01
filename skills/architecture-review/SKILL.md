@@ -242,6 +242,7 @@ The architecture data JSON is the single input that determines diagram quality. 
 - Use active verbs: "sends prompts", "writes evaluation scores", "reads user sessions" — not "is connected to" or "depends on".
 - Be specific: "calls OpenAI API" not "makes external requests".
 - Every connection must specify a valid `targetId` matching another component's `id`. The template uses this to enable hover-highlight and click-to-navigate between cards.
+- **Connections must form a directed acyclic graph (DAG).** Do not create circular connections (e.g., A → B → A). If two components have a bidirectional relationship, only include the connection in the direction of the primary data or control flow. Cycles cause the layout algorithm to fail.
 
 **Category assignment:**
 - Each component gets exactly one category from the taxonomy. When a component spans categories (e.g., an API route that also does auth), pick the primary responsibility.

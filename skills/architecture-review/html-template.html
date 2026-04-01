@@ -1021,6 +1021,8 @@ body {
     return;
   }
 
+  try {
+
   var meta = data.metadata;
   var components = data.components || [];
   var risks = data.risks || [];
@@ -1138,13 +1140,18 @@ body {
   var layerOf = {};
   var visited = {};
 
-  function assignLayer(id, depth) {
+  function assignLayer(id, depth, visiting) {
+    if (depth > 50) return; // Guard against excessively deep or infinite recursion
+    if (!visiting) visiting = {};
+    if (visiting[id]) return; // Cycle detected — stop traversal
     if (visited[id] && layerOf[id] >= depth) return;
+    visiting[id] = true;
     visited[id] = true;
     layerOf[id] = Math.max(layerOf[id] || 0, depth);
     (compMap[id] && compMap[id].connections || []).forEach(function(conn) {
-      assignLayer(conn.targetId, depth + 1);
+      assignLayer(conn.targetId, depth + 1, visiting);
     });
+    visiting[id] = false;
   }
 
   components.forEach(function(c) {
@@ -1407,6 +1414,14 @@ body {
     var d = document.createElement('div');
     d.textContent = str;
     return d.innerHTML;
+  }
+
+  } catch(renderErr) {
+    console.error('Architecture review rendering error:', renderErr);
+    var errBanner = document.createElement('div');
+    errBanner.style.cssText = 'position:fixed;top:0;left:0;right:0;padding:1rem 2rem;background:#dc2626;color:#fff;font-family:system-ui;font-size:14px;z-index:9999;text-align:center';
+    errBanner.textContent = 'Rendering error: ' + renderErr.message + '. Check the browser console for details.';
+    document.body.prepend(errBanner);
   }
 })();
 </script>
