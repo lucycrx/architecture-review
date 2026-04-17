@@ -132,6 +132,40 @@ body {
 .risk-chip[data-severity="low"] { color: var(--risk-low); border-color: var(--risk-low); background: var(--risk-low-bg); }
 .risk-chip .count { font-weight: 700; font-size: var(--text-body); }
 
+/* ---- THEME SWITCHER ---- */
+
+.theme-switcher {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.theme-switcher-label {
+  font-family: var(--font-mono);
+  font-size: var(--mono-size);
+  font-weight: var(--mono-weight);
+  letter-spacing: var(--mono-tracking);
+  text-transform: uppercase;
+  color: var(--text-dim);
+  margin-right: 0.25rem;
+}
+
+.theme-btn {
+  font-family: var(--font-mono);
+  font-size: var(--mono-size);
+  letter-spacing: 0.04em;
+  color: var(--text-dim);
+  background: none;
+  border: 1px solid var(--border);
+  padding: 0.2rem 0.5rem;
+  cursor: pointer;
+  transition: border-color 0.15s ease, color 0.15s ease, background 0.15s ease;
+}
+
+.theme-btn:hover { border-color: var(--text-muted); color: var(--text); }
+.theme-btn:focus-visible { outline: 2px solid var(--highlight); outline-offset: 1px; }
+.theme-btn.active { border-color: var(--text); color: var(--text); background: var(--surface-raised); }
+
 .summary-strip { padding: 1.5rem 0; border-bottom: 1px solid var(--border); margin-bottom: 2rem; }
 .summary-text { font-size: var(--text-subhead); line-height: 1.6; }
 .summary-text strong { font-weight: 600; }
@@ -359,7 +393,7 @@ body {
   width: 4px;
   height: 4px;
   border-radius: 50%;
-  background: var(--cat-frontend);
+  background: var(--cat-color, var(--cat-frontend));
   animation: connPulse 2s ease-in-out infinite;
   flex-shrink: 0;
 }
@@ -667,6 +701,166 @@ body {
 @media print {
   .conn-tag::before { display: none; }
 }
+
+/* ============================================
+   THEME OVERRIDES
+   Each [data-theme] block redefines the full
+   custom-property surface. "warm" is the default
+   defined in :root above.
+   ============================================ */
+
+/* ---- COOL ---- */
+html[data-theme="cool"] {
+  --bg: hsl(215, 18%, 96%);
+  --surface: hsl(210, 20%, 99%);
+  --surface-raised: hsl(215, 15%, 93%);
+  --diagram-bg: hsl(215, 15%, 93%);
+  --diagram-surface: hsl(210, 20%, 99%);
+  --diagram-border: hsl(215, 12%, 82%);
+  --diagram-text: hsl(215, 20%, 15%);
+  --diagram-text-dim: hsl(215, 10%, 45%);
+  --diagram-label: hsl(215, 10%, 35%);
+
+  --text: hsl(215, 20%, 10%);
+  --text-muted: hsl(215, 10%, 40%);
+  --text-dim: hsl(215, 8%, 48%);
+  --border: hsl(215, 12%, 86%);
+  --border-hover: hsl(215, 12%, 76%);
+  --highlight: hsl(215, 20%, 25%);
+
+  --risk-critical: hsl(350, 60%, 42%);
+  --risk-critical-bg: hsl(350, 60%, 95%);
+  --risk-high: hsl(20, 65%, 45%);
+  --risk-high-bg: hsl(20, 65%, 95%);
+  --risk-medium: hsl(40, 60%, 42%);
+  --risk-medium-bg: hsl(40, 60%, 94%);
+  --risk-low: hsl(215, 18%, 52%);
+  --risk-low-bg: hsl(215, 18%, 94%);
+
+  --cat-frontend: hsl(210, 50%, 52%);
+  --cat-api: hsl(225, 35%, 50%);
+  --cat-database: hsl(175, 35%, 40%);
+  --cat-cache: hsl(195, 40%, 48%);
+  --cat-auth: hsl(340, 35%, 48%);
+  --cat-external: hsl(255, 30%, 55%);
+  --cat-jobs: hsl(200, 30%, 50%);
+  --cat-storage: hsl(185, 30%, 45%);
+}
+
+/* ---- MONO (Black & White) ---- */
+html[data-theme="mono"] {
+  --bg: hsl(0, 0%, 100%);
+  --surface: hsl(0, 0%, 100%);
+  --surface-raised: hsl(0, 0%, 96%);
+  --diagram-bg: hsl(0, 0%, 96%);
+  --diagram-surface: hsl(0, 0%, 100%);
+  --diagram-border: hsl(0, 0%, 75%);
+  --diagram-text: hsl(0, 0%, 5%);
+  --diagram-text-dim: hsl(0, 0%, 35%);
+  --diagram-label: hsl(0, 0%, 25%);
+
+  --text: hsl(0, 0%, 5%);
+  --text-muted: hsl(0, 0%, 30%);
+  --text-dim: hsl(0, 0%, 40%);
+  --border: hsl(0, 0%, 80%);
+  --border-hover: hsl(0, 0%, 65%);
+  --highlight: hsl(0, 0%, 0%);
+
+  --risk-critical: hsl(0, 0%, 15%);
+  --risk-critical-bg: hsl(0, 0%, 92%);
+  --risk-high: hsl(0, 0%, 25%);
+  --risk-high-bg: hsl(0, 0%, 94%);
+  --risk-medium: hsl(0, 0%, 35%);
+  --risk-medium-bg: hsl(0, 0%, 95%);
+  --risk-low: hsl(0, 0%, 50%);
+  --risk-low-bg: hsl(0, 0%, 96%);
+
+  --cat-frontend: hsl(0, 0%, 20%);
+  --cat-api: hsl(0, 0%, 30%);
+  --cat-database: hsl(0, 0%, 15%);
+  --cat-cache: hsl(0, 0%, 40%);
+  --cat-auth: hsl(0, 0%, 10%);
+  --cat-external: hsl(0, 0%, 35%);
+  --cat-jobs: hsl(0, 0%, 25%);
+  --cat-storage: hsl(0, 0%, 45%);
+}
+
+/* ---- GREYSCALE ---- */
+html[data-theme="greyscale"] {
+  --bg: hsl(0, 0%, 95%);
+  --surface: hsl(0, 0%, 99%);
+  --surface-raised: hsl(0, 0%, 93%);
+  --diagram-bg: hsl(0, 0%, 93%);
+  --diagram-surface: hsl(0, 0%, 99%);
+  --diagram-border: hsl(0, 0%, 82%);
+  --diagram-text: hsl(0, 0%, 12%);
+  --diagram-text-dim: hsl(0, 0%, 42%);
+  --diagram-label: hsl(0, 0%, 32%);
+
+  --text: hsl(0, 0%, 8%);
+  --text-muted: hsl(0, 0%, 38%);
+  --text-dim: hsl(0, 0%, 48%);
+  --border: hsl(0, 0%, 85%);
+  --border-hover: hsl(0, 0%, 72%);
+  --highlight: hsl(0, 0%, 18%);
+
+  --risk-critical: hsl(0, 8%, 40%);
+  --risk-critical-bg: hsl(0, 5%, 93%);
+  --risk-high: hsl(20, 8%, 42%);
+  --risk-high-bg: hsl(20, 5%, 94%);
+  --risk-medium: hsl(40, 8%, 42%);
+  --risk-medium-bg: hsl(40, 5%, 94%);
+  --risk-low: hsl(0, 0%, 52%);
+  --risk-low-bg: hsl(0, 0%, 95%);
+
+  --cat-frontend: hsl(210, 5%, 45%);
+  --cat-api: hsl(220, 5%, 42%);
+  --cat-database: hsl(150, 5%, 38%);
+  --cat-cache: hsl(40, 5%, 48%);
+  --cat-auth: hsl(0, 5%, 42%);
+  --cat-external: hsl(10, 5%, 45%);
+  --cat-jobs: hsl(270, 5%, 45%);
+  --cat-storage: hsl(140, 5%, 42%);
+}
+
+/* ---- EDITORIAL (impeccable design system) ---- */
+html[data-theme="editorial"] {
+  --bg: hsl(60, 7%, 97%);
+  --surface: hsl(60, 5%, 99%);
+  --surface-raised: hsl(55, 6%, 94%);
+  --diagram-bg: hsl(55, 6%, 94%);
+  --diagram-surface: hsl(60, 5%, 99%);
+  --diagram-border: hsl(50, 5%, 80%);
+  --diagram-text: hsl(0, 0%, 10%);
+  --diagram-text-dim: hsl(0, 0%, 40%);
+  --diagram-label: hsl(0, 0%, 28%);
+
+  --text: hsl(0, 0%, 10%);
+  --text-muted: hsl(0, 0%, 35%);
+  --text-dim: hsl(0, 0%, 45%);
+  --border: hsl(50, 5%, 84%);
+  --border-hover: hsl(50, 5%, 72%);
+  --highlight: hsl(0, 0%, 10%);
+
+  --risk-critical: hsl(0, 55%, 38%);
+  --risk-critical-bg: hsl(0, 40%, 94%);
+  --risk-high: hsl(30, 65%, 40%);
+  --risk-high-bg: hsl(30, 50%, 94%);
+  --risk-medium: hsl(46, 80%, 38%);
+  --risk-medium-bg: hsl(46, 60%, 93%);
+  --risk-low: hsl(200, 15%, 50%);
+  --risk-low-bg: hsl(200, 10%, 94%);
+
+  /* Institutional palette: teal, steel blue, forest green, golden ochre */
+  --cat-frontend: hsl(168, 48%, 32%);
+  --cat-api: hsl(207, 32%, 43%);
+  --cat-database: hsl(145, 40%, 30%);
+  --cat-cache: hsl(46, 72%, 40%);
+  --cat-auth: hsl(0, 35%, 40%);
+  --cat-external: hsl(207, 32%, 43%);
+  --cat-jobs: hsl(168, 35%, 38%);
+  --cat-storage: hsl(145, 30%, 35%);
+}
 </style>
 </head>
 <body>
@@ -676,6 +870,14 @@ body {
     <div class="header-left">
       <span class="project-name" id="projectName"></span>
       <span class="project-meta" id="projectMeta"></span>
+    </div>
+    <div class="theme-switcher" id="themeSwitcher">
+      <span class="theme-switcher-label">Theme</span>
+      <button class="theme-btn active" data-theme="warm">Warm</button>
+      <button class="theme-btn" data-theme="cool">Cool</button>
+      <button class="theme-btn" data-theme="mono">B&amp;W</button>
+      <button class="theme-btn" data-theme="greyscale">Grey</button>
+      <button class="theme-btn" data-theme="editorial">Editorial</button>
     </div>
     <div class="risk-counts" id="riskCounts"></div>
   </div>
@@ -727,7 +929,29 @@ body {
 </div>
 
 <script id="architectureData" type="application/json">
-<!-- ARCHITECTURE_DATA -->
+{
+  "metadata": {
+    "projectName": "open-darwin",
+    "framework": "Python / PyTorch",
+    "language": "Python",
+    "scannedAt": "2026-04-01T12:00:00Z",
+    "scaleAssessment": "prototype",
+    "summary": "An evolutionary self-improvement system where a meta-agent writes and rewrites AI task agents, evaluates them across multiple domains (game-playing, math, code generation), and stores results in a file-based archive. The system uses Docker for safe code execution and talks to external LLM providers via a unified interface.",
+    "componentCount": 8,
+    "riskCount": { "critical": 1, "high": 1, "medium": 1, "low": 0 }
+  },
+  "components": [
+    {
+      "id": "generation-loop",
+      "category": "api-layer",
+      "label": "Generation Loop (Orchestrator)",
+      "description": "The central control loop that coordinates the entire evolutionary process. It tells the meta-agent to propose a new version, runs the task agent, evaluates results, and records everything to the archive. Think of it as the factory floor manager.",
+      "files": ["generate_loop.py", "config.py"],
+      "connections": [
+        { "targetId": "meta-agent", "label": "asks for next code version" },
+        { "targetId": "task-agent", "label": "runs the new agent version" },
+        { "targetId": "domain-evaluators", "label": "triggers evaluation" },
+        { "targetId": "archive-store", "label": "records results" }
       ]
     },
     {
@@ -1323,7 +1547,7 @@ body {
 
     var catEl = document.getElementById('detailCategory');
     catEl.textContent = comp.category.replace(/-/g, ' ');
-    catEl.style.background = catColors[comp.category] || '#666';
+    catEl.style.background = catColors[comp.category] || 'var(--diagram-label)';
 
     document.getElementById('detailTitle').textContent = comp.label;
     document.getElementById('detailDescription').textContent = comp.description;
@@ -1415,6 +1639,31 @@ body {
     d.textContent = str;
     return d.innerHTML;
   }
+
+  // ---- THEME SWITCHER ----
+  var themeSwitcher = document.getElementById('themeSwitcher');
+  var savedTheme = null;
+  try { savedTheme = localStorage.getItem('arch-review-theme'); } catch(e) {}
+  if (savedTheme) applyTheme(savedTheme);
+
+  function applyTheme(theme) {
+    if (theme === 'warm') {
+      document.documentElement.removeAttribute('data-theme');
+    } else {
+      document.documentElement.setAttribute('data-theme', theme);
+    }
+    var btns = themeSwitcher.querySelectorAll('.theme-btn');
+    for (var i = 0; i < btns.length; i++) {
+      btns[i].classList.toggle('active', btns[i].getAttribute('data-theme') === theme);
+    }
+    try { localStorage.setItem('arch-review-theme', theme); } catch(e) {}
+  }
+
+  themeSwitcher.addEventListener('click', function(e) {
+    var btn = e.target.closest('.theme-btn');
+    if (!btn) return;
+    applyTheme(btn.getAttribute('data-theme'));
+  });
 
   } catch(renderErr) {
     console.error('Architecture review rendering error:', renderErr);

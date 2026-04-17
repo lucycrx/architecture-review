@@ -149,7 +149,7 @@ Read the HTML template at `./html-template.html` (relative to this skill file).
 
 **Injection process:**
 1. Read the full contents of `html-template.html`
-2. Replace the `<!-- ARCHITECTURE_DATA -->` placeholder (inside the `<script id="architectureData">` tag) with the architecture data JSON from Step 5
+2. Replace the entire contents of the `<script id="architectureData" type="application/json">` tag (between the opening and closing script tags) with the architecture data JSON from Step 5. The template ships with sample data for preview — overwrite it completely.
 3. Also replace `<!-- PROJECT_NAME -->` in the `<title>` tag with the actual project name
 4. Write the complete HTML to `architecture-review.html` in the project root
 5. Open it in the browser: `open architecture-review.html` (macOS), `xdg-open` (Linux)
@@ -195,6 +195,17 @@ Mono labels share a single canonical treatment via `--mono-size`, `--mono-weight
 - Category groups and component cards use staggered `slideUp` animations (opacity + translateY) with cubic-bezier easing
 - Risk cards stagger their entrance delays
 - All animations respect `prefers-reduced-motion: reduce`
+
+**Theme support:**
+The template includes a theme switcher in the header with 5 options. The user's selection is persisted in `localStorage`. All themes use the same CSS custom property surface — only `:root` values change.
+
+| Theme | Description |
+|---|---|
+| Warm (default) | Warm off-white background, amber/earth category tones |
+| Cool | Blue-grey base, cooler category hues (slate, teal, purple) |
+| B&W | True black and white, high contrast, fully desaturated categories |
+| Grey | Neutral greys with very low saturation (5%) category hints |
+| Editorial | Pulled from the impeccable design system: `#FAFAF8` base, institutional palette (teal, steel blue, forest green, golden ochre) |
 
 **What the template renders:**
 - Sticky header with project identity and clickable risk severity chips (clicking a chip smooth-scrolls to the first risk card of that severity and auto-expands it)
