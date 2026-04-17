@@ -32,7 +32,37 @@ You are an architecture reviewer that produces visual, interactive, plain-Englis
 
 When the user invokes this skill, follow these steps:
 
-#### Step 1: Detect project type
+#### Step 1: Interactive wizard
+
+Before scanning, ask the user a few quick questions to tailor the output:
+
+```
+Before I scan, a few quick questions:
+
+1. What's your goal?
+   a) Spot-check my own code (I built this)
+   b) Understand someone else's code (new to this codebase)
+   c) Learning / exploring (just curious how it works)
+   d) Preparing for a handoff or review
+
+2. Diagram style?
+   a) Flow diagram — interactive SVG showing data flow between components with animated connections on hover (best for understanding how pieces connect)
+   b) Component cards — grouped cards with connection tags (best for browsing individual components in detail)
+   c) Both
+
+3. Include risk analysis?
+   a) Yes — flag potential architecture issues with severity ratings
+   b) No — just show me the architecture map
+```
+
+How the wizard answers shape the output:
+- **Goal** sets voice/depth: spot-check → concise, flag issues; understand others' code → more explanatory descriptions and analogies; learning → rich analogies and context; handoff → comprehensive with all details
+- **Diagram style** determines which visualization(s) to generate (see Step 5.5 and Step 6)
+- **Risk analysis** determines whether to run Step 4 and include the risk section
+
+If the user skips the wizard or wants to get straight to it, use sensible defaults: goal=spot-check, diagram=both, risks=yes.
+
+#### Step 2: Detect project type
 
 Read the project root to identify the framework and language:
 - `package.json` → Node.js (check for Next.js, Express, Fastify, Nest, etc.)
@@ -45,7 +75,7 @@ Read the project root to identify the framework and language:
 
 Also check for deployment indicators: `Dockerfile`, `docker-compose.yml`, `vercel.json`, `.github/workflows/`, `fly.toml`, `railway.json`, `Procfile`. These signal production readiness and help calibrate risk severity.
 
-#### Step 2: Scan the codebase
+#### Step 3: Scan the codebase
 
 Launch an Explore subagent with `context: fork` (read-only, forked context so we don't bloat the main conversation). The subagent should systematically examine:
 
@@ -67,7 +97,7 @@ The subagent should return a structured summary with:
 - Notable configuration details
 - Anything that looks unusual or concerning
 
-#### Step 3: Classify components
+#### Step 4: Classify components
 
 Read the component taxonomy file at `./component-taxonomy.json` (relative to this skill file).
 
@@ -77,7 +107,9 @@ Map each discovered element to a taxonomy category. Each component gets:
 - A plain-English description of what it does in this specific project
 - Its key files/locations in the codebase
 
-#### Step 4: Run risk analysis
+#### Step 5: Run risk analysis (if requested)
+
+Skip this step if the user chose "No" for risk analysis in the wizard.
 
 Read the risk patterns file at `./risk-patterns.json` (relative to this skill file).
 
@@ -90,9 +122,9 @@ For each pattern in the library:
    - **Production system**: Docker, monitoring, multiple environments, team workflows → full severity
 4. For matched risks, prepare the full explanation (plain statement + analogy + consequence) and fix recommendation
 
-#### Step 5: Assemble architecture data
+#### Step 6: Assemble architecture data
 
-Construct a structured JSON object with this shape (this is the contract for the future HTML template):
+Construct a structured JSON object with this shape (this is the contract for the HTML template):
 
 ```json
 {
@@ -102,9 +134,13 @@ Construct a structured JSON object with this shape (this is the contract for the
     "language": "string — primary language",
     "scannedAt": "ISO timestamp",
     "scaleAssessment": "prototype | growing | production",
-    "summary": "string — 2-4 sentence plain-English overview of the architecture: what the system does, how the main pieces connect, and the overall data flow",
+    "summary": "string — 2-4 sentence plain-English overview of the architecture",
     "componentCount": "number",
     "riskCount": { "critical": 0, "high": 0, "medium": 0, "low": 0 }
+  },
+  "options": {
+    "diagramStyle": "flow | cards | both",
+    "includeRisks": true
   },
   "components": [
     {
@@ -113,9 +149,17 @@ Construct a structured JSON object with this shape (this is the contract for the
       "label": "string — human-readable name",
       "description": "string — what it does in plain English",
       "files": ["string — key file paths"],
+      "flowTier": "string — flow tier ID (required when diagramStyle is 'flow' or 'both')",
       "connections": [
         { "targetId": "string", "label": "string — relationship description" }
       ]
+    }
+  ],
+  "flowTiers": [
+    {
+      "id": "string — unique tier ID (e.g., 'orchestration', 'workers', 'state')",
+      "label": "string — display name (e.g., 'Orchestration', 'AI Workers')",
+      "category": "string — taxonomy category for color-coding (e.g., 'api-layer', 'database')"
     }
   ],
   "risks": [
@@ -143,7 +187,32 @@ Construct a structured JSON object with this shape (this is the contract for the
 }
 ```
 
-#### Step 6: Generate the interactive HTML output
+The `options` object reflects the user's wizard choices. The `flowTiers` array and per-component `flowTier` fields are only required when `diagramStyle` is `"flow"` or `"both"`. The `risks` array can be empty when `includeRisks` is `false`.
+
+#### Step 6.5: Assign flow tiers (if flow diagram selected)
+
+Skip this step if the user chose "Component cards" only in the wizard.
+
+Analyze the component connection graph and assign each component to a **flow tier** — a logical column in the left-to-right data flow. Flow tiers are NOT the same as taxonomy categories. They represent a component's role in the primary data/control flow.
+
+**How to assign tiers:**
+1. Identify 3-6 natural groupings based on how data flows through the system. Typical tier patterns:
+   - Entry points / orchestration on the left
+   - Processing / workers in the middle
+   - External services and data stores on the right
+2. Assign each component to exactly one tier based on where it sits in the primary flow
+3. Order tiers left-to-right following the direction of data/control flow
+4. Pick a representative `category` from the taxonomy for each tier — this determines the tier's color in the diagram (it uses the existing `--cat-*` color tokens)
+
+**Guidelines:**
+- Aim for 2-4 components per tier. If a tier has 5+, consider splitting it.
+- If a component connects equally to multiple tiers, place it in the tier where it initiates action (source side).
+- External services and data stores typically go in the rightmost tiers.
+- The tier `label` should be a short, descriptive name like "Orchestration", "AI Workers", "External Services", "State & Memory" — not a taxonomy category name.
+
+Add the `flowTiers` array and per-component `flowTier` fields to the architecture data JSON.
+
+#### Step 7: Generate the interactive HTML output
 
 Read the HTML template at `./html-template.html` (relative to this skill file).
 
@@ -215,18 +284,30 @@ The template includes a theme switcher in the header with 5 options. The user's 
 - Sticky detail sidebar (right side, appears on component click)
 - Expandable risk report sorted by severity with smooth grid-template-rows expand/collapse transitions (each card has: plain-English explanation, analogy, consequence, evidence, fix recommendation, and "learn more" links to the companion website)
 
+**How the flow diagram works — interactive SVG:**
+
+When `diagramStyle` is `"flow"` or `"both"`, the template auto-generates an interactive SVG flow diagram from the `flowTiers` data. You do NOT need to write any SVG — the template's JavaScript computes all positions, edge paths, and interactivity automatically from the JSON.
+
+- **Left-to-right layout**: Each flow tier becomes a column. Components are vertically distributed within their column.
+- **Color-coded swimlanes**: Each tier gets a dashed-border box colored to match its category. The tier label is centered above the box in the tier's accent color.
+- **Cubic Bezier edges**: Connections render as smooth curved paths between node anchor points.
+- **Hover-activated flow**: All edges are greyed out and static by default. Hovering a node activates its connected edges with color and animated dashed flow. Unconnected nodes dim. This keeps the diagram clean and readable even with many connections.
+- **Edge labels on top**: Connection labels (from the component's `connections` array) are positioned along each edge path and always render above nodes.
+- **Tooltips**: Hovering a node shows its description, files, and connections in a tooltip.
+
 **Do NOT attempt to:**
-- Draw SVG lines or paths between components
+- Write SVG markup directly — the template generates it from the JSON data
 - Use absolute positioning for diagram nodes
-- Generate Mermaid or other diagram markup (the HTML template handles all visualization)
-- Use tier-level flow connectors between category rows — connections belong on individual component cards
+- Generate Mermaid or other diagram markup
 
 **After generating the HTML**, also present a brief summary in the conversation:
 1. One sentence: what the project is and overall health
-2. Top 2-3 risks with their plain-English summary
+2. Top 2-3 risks with their plain-English summary (if risk analysis was included)
 3. Note that the full interactive report is open in the browser
 
-#### Step 7: Offer to fix
+#### Step 8: Offer to fix (if risk analysis was included)
+
+Skip this step if risk analysis was not included.
 
 After presenting the summary, offer to fix any of the flagged risks. For each risk the user wants fixed:
 1. Explain what you're about to change and why, in plain English

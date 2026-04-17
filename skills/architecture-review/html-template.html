@@ -703,6 +703,135 @@ body {
 }
 
 /* ============================================
+   FLOW DIAGRAM (interactive SVG)
+   ============================================ */
+
+.flow-section { margin-bottom: 3rem; }
+.flow-section .section-label { font-family: var(--font-mono); font-size: var(--mono-size); font-weight: var(--mono-weight); letter-spacing: var(--mono-tracking); text-transform: uppercase; color: var(--text-dim); margin-bottom: 1rem; }
+
+.flow-container {
+  background: var(--diagram-surface);
+  border: 1px solid var(--diagram-border);
+  border-radius: 12px;
+  padding: 1.5rem;
+  overflow-x: auto;
+  min-height: 200px;
+}
+
+.flow-container svg {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  font-family: var(--font-body);
+}
+
+/* Flow diagram group labels */
+.flow-container .flow-group-title {
+  font-family: var(--font-body);
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  text-anchor: middle;
+}
+
+/* Flow diagram node labels */
+.flow-container .flow-node-label {
+  font-family: var(--font-body);
+  font-size: 16px;
+  font-weight: 600;
+  text-anchor: middle;
+  fill: var(--diagram-text);
+}
+
+.flow-container .flow-node-caption {
+  font-family: var(--font-body);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  text-anchor: middle;
+  text-transform: uppercase;
+  fill: var(--diagram-text-dim);
+}
+
+/* Flow edges — greyed out by default */
+.flow-container .flow-edge-path {
+  fill: none;
+  stroke: var(--diagram-border);
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  opacity: 0.35;
+  transition: stroke 0.25s, opacity 0.25s;
+}
+
+/* Flow edge labels — dimmed by default */
+.flow-container .flow-edge-label-bg {
+  fill: var(--diagram-surface);
+  stroke: var(--diagram-border);
+  stroke-width: 1;
+  opacity: 0.3;
+  transition: opacity 0.25s;
+}
+
+.flow-container .flow-edge-label {
+  font-family: var(--font-body);
+  font-size: 12px;
+  font-weight: 500;
+  text-anchor: middle;
+  fill: var(--diagram-text);
+  opacity: 0.25;
+  transition: opacity 0.25s;
+}
+
+/* Activated edges on hover */
+.flow-container .flow-edge.edge-active .flow-edge-path {
+  opacity: 1;
+  animation: flowDash linear infinite;
+}
+
+.flow-container .flow-edge.edge-active .flow-edge-label { opacity: 1; }
+.flow-container .flow-edge.edge-active .flow-edge-label-bg { opacity: 1; }
+
+/* Node interactivity */
+.flow-container .flow-node { cursor: pointer; transition: opacity 0.25s; }
+.flow-container .flow-node.node-dimmed { opacity: 0.2; }
+.flow-container .flow-node:hover .flow-node-fill { filter: brightness(0.96); }
+.flow-container .flow-node-stroke { fill: none; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
+
+/* Group frames */
+.flow-container .flow-group-frame {
+  fill: none;
+  stroke-width: 1.5;
+  stroke-dasharray: 8 6;
+}
+
+@keyframes flowDash {
+  from { stroke-dashoffset: 0; }
+  to { stroke-dashoffset: -28; }
+}
+
+/* Flow diagram hint */
+.flow-hint {
+  display: flex;
+  gap: 1.5rem;
+  margin-bottom: 0.75rem;
+  font-size: var(--text-small);
+  color: var(--text-dim);
+}
+
+.flow-hint .hint-key {
+  font-family: var(--font-mono);
+  font-size: var(--mono-size);
+  font-weight: var(--mono-weight);
+  letter-spacing: var(--mono-tracking);
+  background: var(--surface-raised);
+  border: 1px solid var(--border);
+  padding: 0.1rem 0.35rem;
+  border-radius: 4px;
+  text-transform: uppercase;
+}
+
+/* ============================================
    THEME OVERRIDES
    Each [data-theme] block redefines the full
    custom-property surface. "warm" is the default
@@ -915,7 +1044,15 @@ html[data-theme="editorial"] {
     </div>
   </section>
 
-  <section class="risk-section">
+  <section class="flow-section" id="flowSection" style="display:none">
+    <div class="section-label">Flow Diagram</div>
+    <div class="flow-hint">
+      <span><span class="hint-key">hover</span> a component to highlight its connections</span>
+    </div>
+    <div class="flow-container" id="flowDiagram"></div>
+  </section>
+
+  <section class="risk-section" id="riskSection">
     <div class="section-label">Risk Report</div>
     <div class="risk-list" id="riskList"></div>
   </section>
@@ -940,10 +1077,22 @@ html[data-theme="editorial"] {
     "componentCount": 8,
     "riskCount": { "critical": 1, "high": 1, "medium": 1, "low": 0 }
   },
+  "options": {
+    "diagramStyle": "both",
+    "includeRisks": true
+  },
+  "flowTiers": [
+    { "id": "orchestration", "label": "Orchestration", "category": "api-layer" },
+    { "id": "workers", "label": "AI Workers", "category": "background-jobs" },
+    { "id": "execution", "label": "Execution & Evaluation", "category": "storage" },
+    { "id": "external", "label": "External Services", "category": "external-services" },
+    { "id": "state", "label": "State & Memory", "category": "database" }
+  ],
   "components": [
     {
       "id": "generation-loop",
       "category": "api-layer",
+      "flowTier": "orchestration",
       "label": "Generation Loop (Orchestrator)",
       "description": "The central control loop that coordinates the entire evolutionary process. It tells the meta-agent to propose a new version, runs the task agent, evaluates results, and records everything to the archive. Think of it as the factory floor manager.",
       "files": ["generate_loop.py", "config.py"],
@@ -957,6 +1106,7 @@ html[data-theme="editorial"] {
     {
       "id": "meta-agent",
       "category": "background-jobs",
+      "flowTier": "workers",
       "label": "Meta-Agent (Self-Improver)",
       "description": "An AI agent whose job is to improve other AI agents. It reads the current code, thinks about what could work better, and writes patches (code changes). It is the 'researcher' that proposes experiments.",
       "files": [
@@ -977,6 +1127,7 @@ html[data-theme="editorial"] {
     {
       "id": "task-agent",
       "category": "background-jobs",
+      "flowTier": "workers",
       "label": "Task Agent (Problem Solver)",
       "description": "An AI agent that actually solves problems: writing code, playing games, reviewing papers, proving math theorems. Each 'generation' of the task agent is a different version that the meta-agent created.",
       "files": [
@@ -998,6 +1149,7 @@ html[data-theme="editorial"] {
     {
       "id": "llm-interface",
       "category": "external-services",
+      "flowTier": "external",
       "label": "LLM API Interface (litellm)",
       "description": "A unified wrapper that lets the system talk to multiple AI providers (OpenAI, Anthropic, Google) through one interface. Handles retries, timeouts, and switching between models like GPT-4o, Claude, and Gemini.",
       "files": [
@@ -1016,6 +1168,7 @@ html[data-theme="editorial"] {
     {
       "id": "external-llm-providers",
       "category": "external-services",
+      "flowTier": "external",
       "label": "External LLM Providers",
       "description": "The actual AI services the system depends on: OpenAI (GPT-4o, GPT-5), Anthropic (Claude), and Google (Gemini). API keys stored in a .env file. These are the 'contractors' the system hires to do the thinking.",
       "files": [
@@ -1026,6 +1179,7 @@ html[data-theme="editorial"] {
     {
       "id": "docker-runtime",
       "category": "storage",
+      "flowTier": "execution",
       "label": "Docker Execution Environment",
       "description": "Isolated containers where AI-generated code runs safely. Built on NVIDIA CUDA for GPU access. Each evaluation spins up a container, runs the code inside, and captures the results. This is the 'lab' where experiments happen.",
       "files": [
@@ -1043,6 +1197,7 @@ html[data-theme="editorial"] {
     {
       "id": "domain-evaluators",
       "category": "background-jobs",
+      "flowTier": "execution",
       "label": "Domain Evaluators",
       "description": "Specialized test suites for different problem types: game-playing (BALROG), robotics (Genesis), math (IMO), code generation (Polyglot/SWE-bench), paper review, and search. Each domain scores how well a task agent performed.",
       "files": [
@@ -1063,6 +1218,7 @@ html[data-theme="editorial"] {
     {
       "id": "archive-store",
       "category": "database",
+      "flowTier": "state",
       "label": "Archive (File-Based State Store)",
       "description": "The system's memory. An append-only JSONL file that records every generation attempt: what was tried, what code was written, and how well it scored. Also stores metadata, diffs, and evaluation reports as files on disk.",
       "files": [
@@ -1250,6 +1406,19 @@ html[data-theme="editorial"] {
   var meta = data.metadata;
   var components = data.components || [];
   var risks = data.risks || [];
+  var flowTiers = data.flowTiers || [];
+  var options = data.options || {};
+  var diagramStyle = options.diagramStyle || 'cards';
+  var includeRisks = options.includeRisks !== false;
+
+  // Conditional section visibility
+  var mapSection = document.querySelector('.map-section');
+  var flowSection = document.getElementById('flowSection');
+  var riskSection = document.getElementById('riskSection');
+  if (diagramStyle === 'flow' && mapSection) mapSection.style.display = 'none';
+  if (diagramStyle === 'cards' && flowSection) flowSection.style.display = 'none';
+  if ((diagramStyle === 'flow' || diagramStyle === 'both') && flowSection) flowSection.style.display = '';
+  if (!includeRisks && riskSection) riskSection.style.display = 'none';
 
   var componentRiskMap = {};
   var severityOrder = { critical: 0, high: 1, medium: 2, low: 3 };
@@ -1628,6 +1797,269 @@ html[data-theme="editorial"] {
     });
     riskListEl.appendChild(card);
   });
+
+  // ============================================
+  // FLOW DIAGRAM (interactive SVG)
+  // ============================================
+  if (flowTiers.length > 0 && (diagramStyle === 'flow' || diagramStyle === 'both')) {
+    (function buildFlowDiagram() {
+      var flowEl = document.getElementById('flowDiagram');
+      if (!flowEl) return;
+
+      // Group components by tier
+      var tierComps = {};
+      flowTiers.forEach(function(t) { tierComps[t.id] = []; });
+      components.forEach(function(c) {
+        if (c.flowTier && tierComps[c.flowTier]) tierComps[c.flowTier].push(c);
+      });
+
+      // Layout constants
+      var padL = 80, padR = 80, padTop = 60, padBot = 60;
+      var nodeW = 200, nodeH = 100, nodeRx = 16;
+      var groupPadX = 40, groupPadTop = 40, groupPadBot = 30;
+      var tierGap = 60;
+
+      // Compute tallest tier for SVG height
+      var maxPerTier = 1;
+      flowTiers.forEach(function(t) {
+        var n = tierComps[t.id].length;
+        if (n > maxPerTier) maxPerTier = n;
+      });
+      var nodeGapY = 50;
+      var colContentH = maxPerTier * nodeH + (maxPerTier - 1) * nodeGapY;
+      var svgH = Math.max(600, colContentH + groupPadTop + groupPadBot + padTop + padBot + 40);
+      var usableW = flowTiers.length * (nodeW + groupPadX * 2) + (flowTiers.length - 1) * tierGap;
+      var svgW = usableW + padL + padR;
+
+      // Compute positions
+      var nodePos = {}; // id -> {cx, cy, x, y, w, h}
+      var groupBoxes = []; // {tier, x, y, w, h, color}
+
+      flowTiers.forEach(function(tier, col) {
+        var comps = tierComps[tier.id];
+        var colX = padL + col * (nodeW + groupPadX * 2 + tierGap);
+        var tierH = comps.length * nodeH + (comps.length - 1) * nodeGapY + groupPadTop + groupPadBot;
+        var groupY = padTop + (svgH - padTop - padBot - tierH) / 2;
+        var catColor = catColors[tier.category] || 'var(--diagram-label)';
+
+        groupBoxes.push({
+          tier: tier,
+          x: colX,
+          y: groupY,
+          w: nodeW + groupPadX * 2,
+          h: tierH,
+          color: catColor
+        });
+
+        comps.forEach(function(c, i) {
+          var nx = colX + groupPadX;
+          var ny = groupY + groupPadTop + i * (nodeH + nodeGapY);
+          nodePos[c.id] = { cx: nx + nodeW / 2, cy: ny + nodeH / 2, x: nx, y: ny, w: nodeW, h: nodeH };
+        });
+      });
+
+      // Build SVG
+      var svg = '';
+      svg += '<svg xmlns="http://www.w3.org/2000/svg" width="' + svgW + '" height="' + svgH + '" viewBox="0 0 ' + svgW + ' ' + svgH + '">';
+
+      // Background
+      svg += '<rect width="' + svgW + '" height="' + svgH + '" fill="var(--diagram-bg)" rx="0" />';
+
+      // Arrow marker
+      svg += '<defs><marker id="flow-arrow" viewBox="0 0 12 12" refX="10" refY="6" markerWidth="8" markerHeight="8" orient="auto">';
+      svg += '<path d="M 2 2 L 10 6 L 2 10" fill="none" stroke="context-stroke" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" /></marker></defs>';
+
+      // Groups (swimlanes)
+      groupBoxes.forEach(function(g) {
+        svg += '<g class="flow-group">';
+        svg += '<rect class="flow-group-frame" x="' + g.x + '" y="' + g.y + '" width="' + g.w + '" height="' + g.h + '" rx="20" style="stroke:' + g.color + '" />';
+        svg += '<text class="flow-group-title" x="' + (g.x + g.w / 2) + '" y="' + (g.y + 24) + '" style="fill:' + g.color + '">' + esc(g.tier.label) + '</text>';
+        svg += '</g>';
+      });
+
+      // Collect edges with positions
+      var edges = [];
+      components.forEach(function(comp) {
+        var from = nodePos[comp.id];
+        if (!from) return;
+        (comp.connections || []).forEach(function(conn) {
+          var to = nodePos[conn.targetId];
+          if (!to) return;
+          var tierFrom = flowTiers.findIndex(function(t) { return t.id === comp.flowTier; });
+          var tierTo = flowTiers.findIndex(function(t) {
+            var target = compMap[conn.targetId];
+            return target && t.id === target.flowTier;
+          });
+          edges.push({ fromId: comp.id, toId: conn.targetId, label: conn.label, from: from, to: to, tierFrom: tierFrom, tierTo: tierTo });
+        });
+      });
+
+      // Render edges
+      svg += '<g class="flow-edges">';
+      edges.forEach(function(e, i) {
+        var sx = e.from.x + e.from.w; // right edge
+        var sy = e.from.cy;
+        var ex = e.to.x; // left edge
+        var ey = e.to.cy;
+
+        // For backward or same-column edges, route differently
+        if (e.tierFrom >= e.tierTo) {
+          // Route below
+          var loopY = Math.max(e.from.y + e.from.h, e.to.y + e.to.h) + 60;
+          sx = e.from.cx;
+          sy = e.from.y + e.from.h;
+          ex = e.to.cx;
+          ey = e.to.y + e.to.h;
+          var path = 'M ' + sx + ' ' + sy + ' C ' + sx + ' ' + loopY + ', ' + ex + ' ' + loopY + ', ' + ex + ' ' + ey;
+          svg += '<g class="flow-edge" data-from="' + e.fromId + '" data-to="' + e.toId + '">';
+          svg += '<path class="flow-edge-path" style="stroke-width:2.4;stroke-dasharray:6 7;" d="' + path + '" marker-end="url(#flow-arrow)" />';
+          svg += '</g>';
+        } else {
+          var dx = ex - sx;
+          var cpOff = Math.min(dx * 0.4, 120);
+          var path = 'M ' + sx + ' ' + sy + ' C ' + (sx + cpOff) + ' ' + sy + ', ' + (ex - cpOff) + ' ' + ey + ', ' + ex + ' ' + ey;
+          // Store original color from source tier
+          var tierCat = flowTiers[e.tierFrom] ? flowTiers[e.tierFrom].category : '';
+          var edgeColor = catColors[tierCat] || 'var(--diagram-label)';
+
+          svg += '<g class="flow-edge" data-from="' + e.fromId + '" data-to="' + e.toId + '" data-stroke="' + edgeColor + '">';
+          svg += '<path class="flow-edge-path" style="stroke-width:2.4;stroke-dasharray:6 7;" d="' + path + '" marker-end="url(#flow-arrow)" />';
+          svg += '</g>';
+        }
+      });
+      svg += '</g>';
+
+      // Render nodes
+      svg += '<g class="flow-nodes">';
+      components.forEach(function(comp) {
+        var pos = nodePos[comp.id];
+        if (!pos) return;
+        var tier = flowTiers.find(function(t) { return t.id === comp.flowTier; });
+        var catColor = tier ? (catColors[tier.category] || 'var(--diagram-label)') : 'var(--diagram-label)';
+        var mainLabel = comp.label.split('(')[0].trim();
+        var paren = comp.label.match(/\(([^)]+)\)/);
+
+        svg += '<g class="flow-node" id="flow-node-' + comp.id + '">';
+        // Fill with light tint
+        svg += '<rect class="flow-node-fill" x="' + pos.x + '" y="' + pos.y + '" width="' + pos.w + '" height="' + pos.h + '" rx="' + nodeRx + '" style="fill:color-mix(in oklch, ' + catColor + ' 12%, var(--diagram-surface))" />';
+        // Stroke
+        svg += '<rect class="flow-node-stroke" x="' + pos.x + '" y="' + pos.y + '" width="' + pos.w + '" height="' + pos.h + '" rx="' + nodeRx + '" style="stroke:' + catColor + '" />';
+        // Label (word-wrap on space if long)
+        var words = mainLabel.split(' ');
+        if (words.length > 2 || mainLabel.length > 14) {
+          var mid = Math.ceil(words.length / 2);
+          var line1 = words.slice(0, mid).join(' ');
+          var line2 = words.slice(mid).join(' ');
+          svg += '<text class="flow-node-label" x="' + pos.cx + '" y="' + (pos.cy - 8) + '"><tspan x="' + pos.cx + '" dy="0">' + esc(line1) + '</tspan><tspan x="' + pos.cx + '" dy="22">' + esc(line2) + '</tspan></text>';
+        } else {
+          svg += '<text class="flow-node-label" x="' + pos.cx + '" y="' + (pos.cy - 2) + '">' + esc(mainLabel) + '</text>';
+        }
+        // Caption
+        if (paren) {
+          svg += '<text class="flow-node-caption" x="' + pos.cx + '" y="' + (pos.y + pos.h - 12) + '">' + esc(paren[1]) + '</text>';
+        }
+        svg += '</g>';
+      });
+      svg += '</g>';
+
+      // Render edge labels on top
+      svg += '<g class="flow-edge-labels">';
+      edges.forEach(function(e) {
+        if (!e.label) return;
+        // Bezier midpoint at t=0.5
+        var sx = e.from.x + e.from.w, sy = e.from.cy;
+        var ex = e.to.x, ey = e.to.cy;
+        var mx, my;
+
+        if (e.tierFrom >= e.tierTo) {
+          var loopY = Math.max(e.from.y + e.from.h, e.to.y + e.to.h) + 60;
+          sx = e.from.cx; sy = e.from.y + e.from.h;
+          ex = e.to.cx; ey = e.to.y + e.to.h;
+          mx = (sx + ex) / 2;
+          my = loopY - 10;
+        } else {
+          var dx = ex - sx;
+          var cpOff = Math.min(dx * 0.4, 120);
+          // Cubic bezier at t=0.5: B(0.5) = 0.125*P0 + 0.375*P1 + 0.375*P2 + 0.125*P3
+          mx = 0.125 * sx + 0.375 * (sx + cpOff) + 0.375 * (ex - cpOff) + 0.125 * ex;
+          my = 0.125 * sy + 0.375 * sy + 0.375 * ey + 0.125 * ey;
+        }
+
+        var labelW = Math.max(e.label.length * 7.5 + 16, 60);
+        var labelH = 26;
+        svg += '<g class="flow-edge-label-group" data-from="' + e.fromId + '" data-to="' + e.toId + '">';
+        svg += '<rect class="flow-edge-label-bg" x="' + (mx - labelW / 2) + '" y="' + (my - labelH / 2) + '" width="' + labelW + '" height="' + labelH + '" rx="6" />';
+        svg += '<text class="flow-edge-label" x="' + mx + '" y="' + (my + 4) + '">' + esc(e.label) + '</text>';
+        svg += '</g>';
+      });
+      svg += '</g>';
+
+      svg += '</svg>';
+      flowEl.innerHTML = svg;
+
+      // ---- HOVER INTERACTIVITY ----
+      var svgEl = flowEl.querySelector('svg');
+      if (!svgEl) return;
+      var allEdges = svgEl.querySelectorAll('.flow-edge');
+      var allLabelGroups = svgEl.querySelectorAll('.flow-edge-label-group');
+      var allNodes = svgEl.querySelectorAll('.flow-node');
+
+      function activateFlowNode(nodeId) {
+        var connected = {};
+        connected[nodeId] = true;
+        allEdges.forEach(function(edge) {
+          var from = edge.getAttribute('data-from');
+          var to = edge.getAttribute('data-to');
+          if (from === nodeId || to === nodeId) {
+            edge.classList.add('edge-active');
+            var path = edge.querySelector('.flow-edge-path');
+            var origStroke = edge.getAttribute('data-stroke');
+            if (path && origStroke) {
+              path.style.stroke = origStroke;
+              path.style.animationDuration = '2s';
+            }
+            connected[from] = true;
+            connected[to] = true;
+          }
+        });
+        allLabelGroups.forEach(function(lg) {
+          var from = lg.getAttribute('data-from');
+          var to = lg.getAttribute('data-to');
+          var isActive = from === nodeId || to === nodeId;
+          var lbl = lg.querySelector('.flow-edge-label');
+          var bg = lg.querySelector('.flow-edge-label-bg');
+          if (lbl) lbl.style.opacity = isActive ? '1' : '0.15';
+          if (bg) bg.style.opacity = isActive ? '1' : '0.15';
+        });
+        allNodes.forEach(function(n) {
+          var nId = (n.id || '').replace('flow-node-', '');
+          if (!connected[nId]) n.classList.add('node-dimmed');
+        });
+      }
+
+      function deactivateFlowAll() {
+        allEdges.forEach(function(edge) {
+          edge.classList.remove('edge-active');
+          var path = edge.querySelector('.flow-edge-path');
+          if (path) { path.style.stroke = ''; path.style.animationDuration = ''; }
+        });
+        allLabelGroups.forEach(function(lg) {
+          var lbl = lg.querySelector('.flow-edge-label');
+          var bg = lg.querySelector('.flow-edge-label-bg');
+          if (lbl) lbl.style.opacity = '';
+          if (bg) bg.style.opacity = '';
+        });
+        allNodes.forEach(function(n) { n.classList.remove('node-dimmed'); });
+      }
+
+      allNodes.forEach(function(node) {
+        var nodeId = (node.id || '').replace('flow-node-', '');
+        node.style.cursor = 'pointer';
+        node.addEventListener('mouseenter', function() { activateFlowNode(nodeId); });
+        node.addEventListener('mouseleave', deactivateFlowAll);
+      });
+    })();
+  }
 
   // ---- FOOTER ----
   var ts = meta.scannedAt ? new Date(meta.scannedAt).toLocaleDateString('en-US', { year:'numeric', month:'long', day:'numeric', hour:'2-digit', minute:'2-digit' }) : '';
