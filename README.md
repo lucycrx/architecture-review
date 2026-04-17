@@ -15,25 +15,28 @@ Built for PMs, founders, and vibecoders who want to understand what a system loo
 
 ## Install
 
-### From a marketplace
-
-If the marketplace is already configured:
-
-```
-/plugin install architecture-review
-```
-
 ### From GitHub
+
+Add the plugin marketplace, then install:
 
 ```
 /plugin marketplace add lucycrx/architecture-review
-/plugin install architecture-review
+/plugin install architecture-review@lucycrx-architecture-review
 ```
 
-### Local testing
+### Local development
+
+Clone the repo and point Claude Code at it:
 
 ```bash
+git clone https://github.com/lucycrx/architecture-review.git
 claude --plugin-dir ./architecture-review
+```
+
+After installing, reload plugins to activate:
+
+```
+/reload-plugins
 ```
 
 ## Usage
@@ -41,7 +44,7 @@ claude --plugin-dir ./architecture-review
 Open any project with Claude Code, then run:
 
 ```
-/architecture-review:architecture-review
+/architecture-review
 ```
 
 Claude will ask you a few questions:
