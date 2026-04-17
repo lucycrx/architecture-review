@@ -1,7 +1,7 @@
 {
   "name": "architecture-review",
-  "description": "Scan any codebase and generate an interactive HTML architecture diagram with plain-English explanations and risk analysis. Built for PMs, founders, and vibecoders.",
-  "version": "1.0.0",
+  "description": "Scan any codebase and generate an interactive HTML architecture report with SVG flow diagrams, component cards, plain-English explanations, and risk analysis. Includes an interactive wizard, hover-activated data flow animations, and 5 themes.",
+  "version": "1.1.0",
   "author": {
     "name": "Lucy Chen"
   },
