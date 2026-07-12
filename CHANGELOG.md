@@ -2,6 +2,17 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.2.0] - 2026-07-12
+
+### Changed
+- Learn-more links now point to the companion site at `sysark.dev` (was `systemdesignschool.com`)
+- Glossary links resolve to full concept pages (`/concepts/<id>`) instead of a fragment on `/glossary`
+- Report footer attribution updated to Sysark
+- Base URL is now a single `SITE_BASE` constant in the HTML template
+
+### Fixed
+- Risk patterns referenced Build Story stages that don't exist (`online-store` stage-4, `ride-sharing` stage-4/5); remapped to valid stages so learn-more links resolve
+
 ## [1.1.0] - 2026-04-17
 
 ### Added

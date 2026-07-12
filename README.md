@@ -55,6 +55,10 @@ Claude will ask you a few questions:
 
 Then it scans the codebase and opens an `architecture-review.html` file in your browser.
 
+## Learn more
+
+The report links out to [Sysark](https://sysark.dev) — the companion site — where every concept and risk it surfaces is explained in plain English, with real-world analogies and interactive Build Stories that follow a product from first deploy to production scale.
+
 ## What it detects
 
 **Component categories:** Frontend, API layer, Database, Cache, Auth, External services, Background jobs, Storage

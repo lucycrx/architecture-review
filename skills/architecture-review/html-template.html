@@ -132,6 +132,7 @@ body {
 .risk-chip[data-severity="low"] { color: var(--risk-low); border-color: var(--risk-low); background: var(--risk-low-bg); }
 .risk-chip .count { font-weight: 700; font-size: var(--text-body); }
 
+/* THEME-SWITCHER-CSS:START */
 /* ---- THEME SWITCHER ---- */
 
 .theme-switcher {
@@ -165,6 +166,7 @@ body {
 .theme-btn:hover { border-color: var(--text-muted); color: var(--text); }
 .theme-btn:focus-visible { outline: 2px solid var(--highlight); outline-offset: 1px; }
 .theme-btn.active { border-color: var(--text); color: var(--text); background: var(--surface-raised); }
+/* THEME-SWITCHER-CSS:END */
 
 .summary-strip { padding: 1.5rem 0; border-bottom: 1px solid var(--border); margin-bottom: 2rem; }
 .summary-text { font-size: var(--text-subhead); line-height: 1.6; }
@@ -754,23 +756,18 @@ body {
   fill: var(--diagram-text-dim);
 }
 
-/* Flow edges — greyed out by default */
+/* Flow edges */
 .flow-container .flow-edge-path {
   fill: none;
-  stroke: var(--diagram-border);
   stroke-linecap: round;
   stroke-linejoin: round;
-  opacity: 0.35;
-  transition: stroke 0.25s, opacity 0.25s;
 }
 
-/* Flow edge labels — dimmed by default */
+/* Flow edge labels */
 .flow-container .flow-edge-label-bg {
   fill: var(--diagram-surface);
   stroke: var(--diagram-border);
   stroke-width: 1;
-  opacity: 0.3;
-  transition: opacity 0.25s;
 }
 
 .flow-container .flow-edge-label {
@@ -779,23 +776,7 @@ body {
   font-weight: 500;
   text-anchor: middle;
   fill: var(--diagram-text);
-  opacity: 0.25;
-  transition: opacity 0.25s;
 }
-
-/* Activated edges on hover */
-.flow-container .flow-edge.edge-active .flow-edge-path {
-  opacity: 1;
-  animation: flowDash linear infinite;
-}
-
-.flow-container .flow-edge.edge-active .flow-edge-label { opacity: 1; }
-.flow-container .flow-edge.edge-active .flow-edge-label-bg { opacity: 1; }
-
-/* Node interactivity */
-.flow-container .flow-node { cursor: pointer; transition: opacity 0.25s; }
-.flow-container .flow-node.node-dimmed { opacity: 0.2; }
-.flow-container .flow-node:hover .flow-node-fill { filter: brightness(0.96); }
 .flow-container .flow-node-stroke { fill: none; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
 
 /* Group frames */
@@ -803,11 +784,6 @@ body {
   fill: none;
   stroke-width: 1.5;
   stroke-dasharray: 8 6;
-}
-
-@keyframes flowDash {
-  from { stroke-dashoffset: 0; }
-  to { stroke-dashoffset: -28; }
 }
 
 /* Flow diagram hint */
@@ -838,6 +814,7 @@ body {
    defined in :root above.
    ============================================ */
 
+/* THEME:cool:START */
 /* ---- COOL ---- */
 html[data-theme="cool"] {
   --bg: hsl(215, 18%, 96%);
@@ -875,7 +852,9 @@ html[data-theme="cool"] {
   --cat-jobs: hsl(200, 30%, 50%);
   --cat-storage: hsl(185, 30%, 45%);
 }
+/* THEME:cool:END */
 
+/* THEME:mono:START */
 /* ---- MONO (Black & White) ---- */
 html[data-theme="mono"] {
   --bg: hsl(0, 0%, 100%);
@@ -913,7 +892,9 @@ html[data-theme="mono"] {
   --cat-jobs: hsl(0, 0%, 25%);
   --cat-storage: hsl(0, 0%, 45%);
 }
+/* THEME:mono:END */
 
+/* THEME:greyscale:START */
 /* ---- GREYSCALE ---- */
 html[data-theme="greyscale"] {
   --bg: hsl(0, 0%, 95%);
@@ -951,7 +932,9 @@ html[data-theme="greyscale"] {
   --cat-jobs: hsl(270, 5%, 45%);
   --cat-storage: hsl(140, 5%, 42%);
 }
+/* THEME:greyscale:END */
 
+/* THEME:editorial:START */
 /* ---- EDITORIAL (impeccable design system) ---- */
 html[data-theme="editorial"] {
   --bg: hsl(60, 7%, 97%);
@@ -990,6 +973,7 @@ html[data-theme="editorial"] {
   --cat-jobs: hsl(168, 35%, 38%);
   --cat-storage: hsl(145, 30%, 35%);
 }
+/* THEME:editorial:END */
 </style>
 </head>
 <body>
@@ -1000,6 +984,7 @@ html[data-theme="editorial"] {
       <span class="project-name" id="projectName"></span>
       <span class="project-meta" id="projectMeta"></span>
     </div>
+    <!-- THEME-SWITCHER-HTML:START -->
     <div class="theme-switcher" id="themeSwitcher">
       <span class="theme-switcher-label">Theme</span>
       <button class="theme-btn active" data-theme="warm">Warm</button>
@@ -1008,6 +993,7 @@ html[data-theme="editorial"] {
       <button class="theme-btn" data-theme="greyscale">Grey</button>
       <button class="theme-btn" data-theme="editorial">Editorial</button>
     </div>
+    <!-- THEME-SWITCHER-HTML:END -->
     <div class="risk-counts" id="riskCounts"></div>
   </div>
 </header>
@@ -1047,7 +1033,7 @@ html[data-theme="editorial"] {
   <section class="flow-section" id="flowSection" style="display:none">
     <div class="section-label">Flow Diagram</div>
     <div class="flow-hint">
-      <span><span class="hint-key">hover</span> a component to highlight its connections</span>
+      <span>Connections are color-coded by source tier</span>
     </div>
     <div class="flow-container" id="flowDiagram"></div>
   </section>
@@ -1060,7 +1046,7 @@ html[data-theme="editorial"] {
   <footer class="footer">
     <div class="footer-left" id="footerTimestamp"></div>
     <div class="footer-right">
-      Generated by <a href="https://systemdesignschool.com" target="_blank" rel="noopener">System Design for Builders</a>
+      Generated by <a href="https://sysark.dev" target="_blank" rel="noopener">Sysark</a>
     </div>
   </footer>
 </div>
@@ -1392,6 +1378,9 @@ html[data-theme="editorial"] {
 <script>
 (function() {
   'use strict';
+
+  // Companion website base URL — change here to repoint all learn-more links.
+  var SITE_BASE = 'https://sysark.dev';
 
   var dataEl = document.getElementById('architectureData');
   var data;
@@ -1781,10 +1770,10 @@ html[data-theme="editorial"] {
     if (risk.learnMore) {
       var links = [];
       (risk.learnMore.glossaryTerms||[]).forEach(function(t) {
-        links.push('<a class="learn-more-link" href="https://systemdesignschool.com/glossary#' + esc(t) + '" target="_blank" rel="noopener">' + esc(t.replace(/-/g,' ')) + '</a>');
+        links.push('<a class="learn-more-link" href="' + SITE_BASE + '/concepts/' + esc(t) + '" target="_blank" rel="noopener">' + esc(t.replace(/-/g,' ')) + '</a>');
       });
       if (risk.learnMore.buildStory && risk.learnMore.buildStory.slug)
-        links.push('<a class="learn-more-link" href="https://systemdesignschool.com/stories/' + esc(risk.learnMore.buildStory.slug) + '" target="_blank" rel="noopener">Build Story: ' + esc(risk.learnMore.buildStory.slug.replace(/-/g,' ')) + '</a>');
+        links.push('<a class="learn-more-link" href="' + SITE_BASE + '/stories/' + esc(risk.learnMore.buildStory.slug) + '" target="_blank" rel="noopener">Build Story: ' + esc(risk.learnMore.buildStory.slug.replace(/-/g,' ')) + '</a>');
       if (links.length) d += '<div class="risk-learn-more">' + links.join('') + '</div>';
     }
     d += '</div>';
@@ -1814,10 +1803,10 @@ html[data-theme="editorial"] {
       });
 
       // Layout constants
-      var padL = 80, padR = 80, padTop = 60, padBot = 60;
+      var padL = 80, padR = 80, padTop = 70, padBot = 70;
       var nodeW = 200, nodeH = 100, nodeRx = 16;
-      var groupPadX = 40, groupPadTop = 40, groupPadBot = 30;
-      var tierGap = 60;
+      var groupPadX = 50, groupPadTop = 48, groupPadBot = 36;
+      var tierGap = 140;
 
       // Compute tallest tier for SVG height
       var maxPerTier = 1;
@@ -1825,7 +1814,7 @@ html[data-theme="editorial"] {
         var n = tierComps[t.id].length;
         if (n > maxPerTier) maxPerTier = n;
       });
-      var nodeGapY = 50;
+      var nodeGapY = 80;
       var colContentH = maxPerTier * nodeH + (maxPerTier - 1) * nodeGapY;
       var svgH = Math.max(600, colContentH + groupPadTop + groupPadBot + padTop + padBot + 40);
       var usableW = flowTiers.length * (nodeW + groupPadX * 2) + (flowTiers.length - 1) * tierGap;
@@ -1902,6 +1891,10 @@ html[data-theme="editorial"] {
         var ex = e.to.x; // left edge
         var ey = e.to.cy;
 
+        // Compute edge color from source tier
+        var tierCat = flowTiers[e.tierFrom] ? flowTiers[e.tierFrom].category : '';
+        var edgeColor = catColors[tierCat] || 'var(--diagram-label)';
+
         // For backward or same-column edges, route differently
         if (e.tierFrom >= e.tierTo) {
           // Route below
@@ -1912,18 +1905,15 @@ html[data-theme="editorial"] {
           ey = e.to.y + e.to.h;
           var path = 'M ' + sx + ' ' + sy + ' C ' + sx + ' ' + loopY + ', ' + ex + ' ' + loopY + ', ' + ex + ' ' + ey;
           svg += '<g class="flow-edge" data-from="' + e.fromId + '" data-to="' + e.toId + '">';
-          svg += '<path class="flow-edge-path" style="stroke-width:2.4;stroke-dasharray:6 7;" d="' + path + '" marker-end="url(#flow-arrow)" />';
+          svg += '<path class="flow-edge-path" style="stroke:' + edgeColor + ';stroke-width:1.6;stroke-dasharray:8 6;" d="' + path + '" marker-end="url(#flow-arrow)" />';
           svg += '</g>';
         } else {
           var dx = ex - sx;
           var cpOff = Math.min(dx * 0.4, 120);
           var path = 'M ' + sx + ' ' + sy + ' C ' + (sx + cpOff) + ' ' + sy + ', ' + (ex - cpOff) + ' ' + ey + ', ' + ex + ' ' + ey;
-          // Store original color from source tier
-          var tierCat = flowTiers[e.tierFrom] ? flowTiers[e.tierFrom].category : '';
-          var edgeColor = catColors[tierCat] || 'var(--diagram-label)';
 
-          svg += '<g class="flow-edge" data-from="' + e.fromId + '" data-to="' + e.toId + '" data-stroke="' + edgeColor + '">';
-          svg += '<path class="flow-edge-path" style="stroke-width:2.4;stroke-dasharray:6 7;" d="' + path + '" marker-end="url(#flow-arrow)" />';
+          svg += '<g class="flow-edge" data-from="' + e.fromId + '" data-to="' + e.toId + '">';
+          svg += '<path class="flow-edge-path" style="stroke:' + edgeColor + ';stroke-width:1.6;stroke-dasharray:8 6;" d="' + path + '" marker-end="url(#flow-arrow)" />';
           svg += '</g>';
         }
       });
@@ -1962,8 +1952,9 @@ html[data-theme="editorial"] {
       });
       svg += '</g>';
 
-      // Render edge labels on top
+      // Render edge labels on top (with overlap prevention and leader lines)
       svg += '<g class="flow-edge-labels">';
+      var placedLabels = [];
       edges.forEach(function(e) {
         if (!e.label) return;
         // Bezier midpoint at t=0.5
@@ -1985,9 +1976,40 @@ html[data-theme="editorial"] {
           my = 0.125 * sy + 0.375 * sy + 0.375 * ey + 0.125 * ey;
         }
 
+        // Remember the original edge midpoint for leader lines
+        var anchorX = mx, anchorY = my;
+
+        // Offset label above the edge path to avoid sitting on the line
+        my -= 20;
+
         var labelW = Math.max(e.label.length * 7.5 + 16, 60);
         var labelH = 26;
+
+        // Nudge label to avoid overlapping previously placed labels and nodes
+        var attempts = 0;
+        while (attempts < 8) {
+          var overlaps = placedLabels.some(function(p) {
+            return Math.abs(mx - p.x) < (labelW / 2 + p.w / 2 + 6) &&
+                   Math.abs(my - p.y) < (labelH / 2 + p.h / 2 + 6);
+          });
+          if (!overlaps) break;
+          my -= labelH + 6;
+          attempts++;
+        }
+        if (my < labelH) my = labelH;
+        if (my > svgH - labelH) my = svgH - labelH;
+        placedLabels.push({ x: mx, y: my, w: labelW, h: labelH });
+
+        // Compute edge color for the leader line
+        var tierCat = flowTiers[e.tierFrom] ? flowTiers[e.tierFrom].category : '';
+        var edgeColor = catColors[tierCat] || 'var(--diagram-label)';
+
         svg += '<g class="flow-edge-label-group" data-from="' + e.fromId + '" data-to="' + e.toId + '">';
+        // Leader line from edge midpoint to label (only if label was nudged)
+        var dist = Math.sqrt((mx - anchorX) * (mx - anchorX) + (my - anchorY) * (my - anchorY));
+        if (dist > 10) {
+          svg += '<line class="flow-label-leader" x1="' + anchorX + '" y1="' + anchorY + '" x2="' + mx + '" y2="' + (my + labelH / 2 - 2) + '" style="stroke:' + edgeColor + ';stroke-width:1;stroke-dasharray:3 3;opacity:0.4" />';
+        }
         svg += '<rect class="flow-edge-label-bg" x="' + (mx - labelW / 2) + '" y="' + (my - labelH / 2) + '" width="' + labelW + '" height="' + labelH + '" rx="6" />';
         svg += '<text class="flow-edge-label" x="' + mx + '" y="' + (my + 4) + '">' + esc(e.label) + '</text>';
         svg += '</g>';
@@ -1996,68 +2018,6 @@ html[data-theme="editorial"] {
 
       svg += '</svg>';
       flowEl.innerHTML = svg;
-
-      // ---- HOVER INTERACTIVITY ----
-      var svgEl = flowEl.querySelector('svg');
-      if (!svgEl) return;
-      var allEdges = svgEl.querySelectorAll('.flow-edge');
-      var allLabelGroups = svgEl.querySelectorAll('.flow-edge-label-group');
-      var allNodes = svgEl.querySelectorAll('.flow-node');
-
-      function activateFlowNode(nodeId) {
-        var connected = {};
-        connected[nodeId] = true;
-        allEdges.forEach(function(edge) {
-          var from = edge.getAttribute('data-from');
-          var to = edge.getAttribute('data-to');
-          if (from === nodeId || to === nodeId) {
-            edge.classList.add('edge-active');
-            var path = edge.querySelector('.flow-edge-path');
-            var origStroke = edge.getAttribute('data-stroke');
-            if (path && origStroke) {
-              path.style.stroke = origStroke;
-              path.style.animationDuration = '2s';
-            }
-            connected[from] = true;
-            connected[to] = true;
-          }
-        });
-        allLabelGroups.forEach(function(lg) {
-          var from = lg.getAttribute('data-from');
-          var to = lg.getAttribute('data-to');
-          var isActive = from === nodeId || to === nodeId;
-          var lbl = lg.querySelector('.flow-edge-label');
-          var bg = lg.querySelector('.flow-edge-label-bg');
-          if (lbl) lbl.style.opacity = isActive ? '1' : '0.15';
-          if (bg) bg.style.opacity = isActive ? '1' : '0.15';
-        });
-        allNodes.forEach(function(n) {
-          var nId = (n.id || '').replace('flow-node-', '');
-          if (!connected[nId]) n.classList.add('node-dimmed');
-        });
-      }
-
-      function deactivateFlowAll() {
-        allEdges.forEach(function(edge) {
-          edge.classList.remove('edge-active');
-          var path = edge.querySelector('.flow-edge-path');
-          if (path) { path.style.stroke = ''; path.style.animationDuration = ''; }
-        });
-        allLabelGroups.forEach(function(lg) {
-          var lbl = lg.querySelector('.flow-edge-label');
-          var bg = lg.querySelector('.flow-edge-label-bg');
-          if (lbl) lbl.style.opacity = '';
-          if (bg) bg.style.opacity = '';
-        });
-        allNodes.forEach(function(n) { n.classList.remove('node-dimmed'); });
-      }
-
-      allNodes.forEach(function(node) {
-        var nodeId = (node.id || '').replace('flow-node-', '');
-        node.style.cursor = 'pointer';
-        node.addEventListener('mouseenter', function() { activateFlowNode(nodeId); });
-        node.addEventListener('mouseleave', deactivateFlowAll);
-      });
     })();
   }
 
@@ -2072,6 +2032,7 @@ html[data-theme="editorial"] {
     return d.innerHTML;
   }
 
+  // THEME-SWITCHER-JS:START
   // ---- THEME SWITCHER ----
   var themeSwitcher = document.getElementById('themeSwitcher');
   var savedTheme = null;
@@ -2096,6 +2057,7 @@ html[data-theme="editorial"] {
     if (!btn) return;
     applyTheme(btn.getAttribute('data-theme'));
   });
+  // THEME-SWITCHER-JS:END
 
   } catch(renderErr) {
     console.error('Architecture review rendering error:', renderErr);

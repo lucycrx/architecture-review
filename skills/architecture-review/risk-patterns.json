@@ -27,7 +27,10 @@
     "fix": {
       "summary": "Move sessions to Redis or a similar in-memory store",
       "detail": "Redis keeps sessions in memory instead of on disk. Session lookups go from ~5ms to ~0.1ms. Think of it as putting a fast badge-scanner at the building entrance instead of making everyone walk to the vault for ID verification.",
-      "relatedGlossary": ["cache", "in-memory-store"],
+      "relatedGlossary": [
+        "cache",
+        "in-memory-store"
+      ],
       "relatedStory": null
     },
     "frameworks": {
@@ -65,8 +68,15 @@
     "fix": {
       "summary": "Add a caching layer for frequently accessed data",
       "detail": "Cache responses for data that does not change on every request. This could be Redis for API data, ISR/static generation for pages, or even simple in-memory caching with a short TTL. Start with the highest-traffic endpoints first.",
-      "relatedGlossary": ["cache", "cdn", "in-memory-store"],
-      "relatedStory": { "storySlug": "online-store", "stageId": "stage-2" }
+      "relatedGlossary": [
+        "cache",
+        "cdn",
+        "in-memory-store"
+      ],
+      "relatedStory": {
+        "storySlug": "online-store",
+        "stageId": "stage-2"
+      }
     },
     "frameworks": {
       "nextjs": "Check if pages use static generation (generateStaticParams), ISR (revalidate), or fetch with cache options. Look for unstable_cache or React cache() usage.",
@@ -102,7 +112,10 @@
     "fix": {
       "summary": "Move files to object storage (S3, Cloudinary, Supabase Storage) and store only the URL in the database",
       "detail": "Store a URL or file path in the database, and put the actual file in a service designed for it. Object storage is cheaper, faster for serving files, and can be fronted by a CDN for even better performance.",
-      "relatedGlossary": ["database", "cdn"],
+      "relatedGlossary": [
+        "database",
+        "cdn"
+      ],
       "relatedStory": null
     },
     "frameworks": {
@@ -139,8 +152,14 @@
     "fix": {
       "summary": "Add rate limiting to public-facing endpoints",
       "detail": "Start with authentication endpoints (login, signup, password reset) and any public API routes. A simple per-IP rate limit (e.g., 100 requests per minute) prevents the worst abuse. For more sophisticated protection, consider an API gateway or edge service like Cloudflare.",
-      "relatedGlossary": ["rate-limiting", "api-gateway"],
-      "relatedStory": { "storySlug": "online-store", "stageId": "stage-4" }
+      "relatedGlossary": [
+        "rate-limiting",
+        "api-gateway"
+      ],
+      "relatedStory": {
+        "storySlug": "online-store",
+        "stageId": "stage-3"
+      }
     },
     "frameworks": {
       "nextjs": "Check for rate limiting middleware in middleware.ts or API routes. Look for next-rate-limit, upstash ratelimit, or Vercel's built-in protection.",
@@ -176,7 +195,9 @@
     "fix": {
       "summary": "Configure connection pooling for your database client",
       "detail": "Most ORMs support connection pooling out of the box. For serverless environments (Vercel, AWS Lambda), use an external pooler like PgBouncer or your database provider's pooling mode (Supabase has a pooler built in, Neon has serverless driver). This reuses connections instead of creating new ones.",
-      "relatedGlossary": ["database"],
+      "relatedGlossary": [
+        "database"
+      ],
       "relatedStory": null
     },
     "frameworks": {
@@ -214,8 +235,14 @@
     "fix": {
       "summary": "Move slow operations to background jobs",
       "detail": "Send emails, process images, and make non-critical API calls in background jobs instead of during the request. The user gets an immediate response, and the heavy work happens behind the scenes. Start with a simple queue (BullMQ for Node, Celery for Python, Sidekiq for Ruby) or a managed service (Inngest, Trigger.dev).",
-      "relatedGlossary": ["async", "message-queue"],
-      "relatedStory": { "storySlug": "ride-sharing", "stageId": "stage-4" }
+      "relatedGlossary": [
+        "async",
+        "message-queue"
+      ],
+      "relatedStory": {
+        "storySlug": "ride-sharing",
+        "stageId": "stage-3"
+      }
     },
     "frameworks": {
       "nextjs": "Look for email sending, image processing, or long API calls inside API route handlers or server actions. Check if any background job system (Inngest, Trigger.dev, BullMQ) is configured.",
@@ -250,8 +277,15 @@
     "fix": {
       "summary": "Add a /health endpoint that verifies critical dependencies",
       "detail": "Create a simple endpoint that returns 200 OK when the app is running and can reach its database. It should check critical dependencies (database connection, cache connection) and return a clear status. Keep it lightweight so it does not add load.",
-      "relatedGlossary": ["health-check", "monitoring", "load-balancer"],
-      "relatedStory": { "storySlug": "ride-sharing", "stageId": "stage-3" }
+      "relatedGlossary": [
+        "health-check",
+        "monitoring",
+        "load-balancer"
+      ],
+      "relatedStory": {
+        "storySlug": "ride-sharing",
+        "stageId": "stage-3"
+      }
     },
     "frameworks": {
       "nextjs": "Look for /api/health or /api/healthz route. Check vercel.json for health check configuration.",
@@ -325,8 +359,14 @@
     "fix": {
       "summary": "Add indexes on columns used in WHERE clauses, JOINs, and ORDER BY",
       "detail": "Identify your most common queries and add indexes on the columns they filter by. Start with foreign keys (used in JOINs) and any column used in WHERE or ORDER BY. Most ORMs make this easy with a migration. Over-indexing has a cost (slower writes), so focus on the columns that matter most.",
-      "relatedGlossary": ["index", "database"],
-      "relatedStory": { "storySlug": "online-store", "stageId": "stage-2" }
+      "relatedGlossary": [
+        "index",
+        "database"
+      ],
+      "relatedStory": {
+        "storySlug": "online-store",
+        "stageId": "stage-2"
+      }
     },
     "frameworks": {
       "nextjs": "Check Prisma schema for @@index directives. Look at migration files for CREATE INDEX statements.",
@@ -362,7 +402,9 @@
     "fix": {
       "summary": "Use eager loading to fetch related data in a single query",
       "detail": "Most ORMs support eager loading: Prisma's include, Django's select_related/prefetch_related, Rails' includes, Sequelize's include. This fetches related data in one or two queries instead of N+1. For GraphQL, use DataLoader to batch individual field lookups.",
-      "relatedGlossary": ["database"],
+      "relatedGlossary": [
+        "database"
+      ],
       "relatedStory": null
     },
     "frameworks": {
@@ -400,7 +442,9 @@
     "fix": {
       "summary": "Add global error handling and error monitoring",
       "detail": "Add a global error boundary (React ErrorBoundary for frontend, global exception handler for API). Create custom error pages (404, 500) that are helpful, not scary. Set up error monitoring (Sentry is the most common) to catch and alert on errors automatically.",
-      "relatedGlossary": ["graceful-degradation"],
+      "relatedGlossary": [
+        "graceful-degradation"
+      ],
       "relatedStory": null
     },
     "frameworks": {
@@ -511,8 +555,15 @@
     "fix": {
       "summary": "Add read replicas for read-heavy operations",
       "detail": "Most managed databases (RDS, Supabase, PlanetScale, Neon) support read replicas. Route read queries to replicas and writes to the primary. Start with analytics/reporting queries, then move high-traffic read endpoints. Note: This introduces eventual consistency, which means reads from a replica might be slightly behind the primary.",
-      "relatedGlossary": ["read-replica", "horizontal-scaling", "eventual-consistency"],
-      "relatedStory": { "storySlug": "online-store", "stageId": "stage-4" }
+      "relatedGlossary": [
+        "read-replica",
+        "horizontal-scaling",
+        "eventual-consistency"
+      ],
+      "relatedStory": {
+        "storySlug": "online-store",
+        "stageId": "stage-3"
+      }
     },
     "frameworks": {
       "nextjs": "Check for a single DATABASE_URL with no read replica variant. Look at Prisma configuration for read replica support.",
@@ -549,8 +600,14 @@
     "fix": {
       "summary": "Organize code into feature or domain modules with clear boundaries",
       "detail": "Group related code by feature or domain (e.g., auth/, billing/, notifications/) rather than by technical layer. Each module should have a clear public interface and minimize dependencies on other modules' internals. This does not mean microservices. A well-organized monolith is better than a poorly organized one.",
-      "relatedGlossary": ["monolith", "microservices"],
-      "relatedStory": { "storySlug": "ride-sharing", "stageId": "stage-5" }
+      "relatedGlossary": [
+        "monolith",
+        "microservices"
+      ],
+      "relatedStory": {
+        "storySlug": "ride-sharing",
+        "stageId": "stage-3"
+      }
     },
     "frameworks": {
       "nextjs": "Check if the app directory is organized by feature or is a flat list of routes. Look for shared code organization in lib/ or components/.",
